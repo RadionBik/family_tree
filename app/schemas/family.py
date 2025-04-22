@@ -45,6 +45,7 @@ class FamilyMemberRead(FamilyMemberBase):
     updated_at: datetime
     relationships_from: List[RelationRead] = [] # List of relations where this member is 'from'
     relationships_to: List[RelationRead] = []   # List of relations where this member is 'to'
+    is_descendant: Optional[bool] = None      # Flag indicating if the member is a direct descendant in the main line
 
     model_config = ConfigDict(from_attributes=True) # Enable ORM mode
 

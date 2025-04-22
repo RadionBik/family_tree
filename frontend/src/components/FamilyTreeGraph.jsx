@@ -1,9 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import CytoscapeComponent from 'react-cytoscapejs';
 import cytoscape from 'cytoscape'; // Import cytoscape core
-import dagre from 'cytoscape-dagre'; // Import dagre layout extension
+import elk from 'cytoscape-elk'; // Import elk layout extension
+import ELK from 'elkjs/lib/elk.bundled.js'; // Import elkjs
 
-cytoscape.use(dagre); // Register the dagre layout
+cytoscape.use(elk); // Register the elk layout
 
 const FamilyTreeGraph = ({ elements, onNodeClick }) => { // Add onNodeClick prop
   const cyRef = useRef(null);
@@ -45,25 +46,30 @@ const FamilyTreeGraph = ({ elements, onNodeClick }) => { // Add onNodeClick prop
       selector: 'edge', // Default edge style
       style: {
         'width': 2,
-        'line-color': '#ccc',
+        'line-color': '#ccc', // Default color
         'curve-style': 'bezier', // Smoother curves
-        // 'target-arrow-shape': 'triangle', // Keep arrows for parent-child? Maybe remove for spouse?
-        // 'target-arrow-color': '#ccc',
+        'label': 'data(label)', // Display the edge label
+        'font-size': '10px', // Smaller font for edge labels
+        'color': '#555', // Label color
+        'text-rotation': 'autorotate',
+        'text-margin-y': -10, // Adjust label position relative to edge
       }
     },
     {
-        selector: 'edge[label="parent-child"]', // Style for parent-child edges
+        selector: 'edge[label="PARENT"]', // Exact match for "PARENT"
         style: {
             'target-arrow-shape': 'triangle',
-            'target-arrow-color': '#ccc',
+            'target-arrow-color': '#28a745', // Green arrow
+            'line-color': '#28a745', // Green line
             'line-style': 'solid'
         }
     },
     {
-        selector: 'edge[label="spouse"]', // Style for spouse edges
+        selector: 'edge[label="SPOUSE"]', // Exact match for "SPOUSE"
         style: {
             'line-style': 'dashed', // Dashed line for spouse relationship
-            'target-arrow-shape': 'none' // No arrow for spouse relationship
+            'target-arrow-shape': 'none', // No arrow for spouse relationship
+            'line-color': '#fd7e14' // Orange line
         }
     },
     {
@@ -75,16 +81,31 @@ const FamilyTreeGraph = ({ elements, onNodeClick }) => { // Add onNodeClick prop
     }
   ];
 
-  // Layout options using dagre
+  // Layout options using elk
   const layout = {
-    name: 'dagre',
-    rankDir: 'TB', // Top to bottom ranking
+    name: 'elk',
     fit: true,
-    padding: 50, // Increased padding
-    spacingFactor: 1.2, // Adjust spacing between nodes
-    avoidOverlap: true,
-    nodeDimensionsIncludeLabels: true,
+    padding: 50,
+    // ELK options: Use layered algorithm for hierarchy
+    elk: {
+      algorithm: 'layered',
+      'elk.direction': 'DOWN', // Top to bottom
+      'elk.layered.spacing.nodeNodeBetweenLayers': '80', // Vertical spacing
+      'elk.spacing.nodeNode': '40', // Horizontal spacing within layer
+      // Attempt to influence node order within layers using is_descendant
+      // This tells ELK how to order nodes that are otherwise equivalent in the hierarchy.
+      // We want non-descendants (false) to come before descendants (true)
+      'elk.layered.nodePlacement.favorStraightEdges': 'true',
+      'elk.layered.compaction.postCompaction.strategy': 'EDGE_LENGTH',
+      'elk.separateConnectedComponents': 'false',
+      // Use Network Simplex node placement strategy
+      'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
+      // Set alignment for Network Simplex
+      'elk.layered.nodePlacement.bk.fixedAlignment': 'BALANCED', // Options: LEFTUP, RIGHTDOWN, BALANCED, CENTER
+      // Removed semiInteractive crossing minimization
+    },
   };
+
 
   useEffect(() => {
     const cy = cyRef.current;

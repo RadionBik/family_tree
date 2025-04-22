@@ -8,44 +8,56 @@ import familyTreeService from '../services/familyTreeService'; // Import the ser
 const transformDataForCytoscape = (members) => {
   const elements = [];
   const edgeIds = new Set(); // To avoid duplicate edges
+  const memberMap = new Map(members.map(m => [String(m.id), m])); // Re-add memberMap
 
+  // 1. Create node elements
   members.forEach(member => {
-    // Add node for the family member
     elements.push({
       data: {
-        id: String(member.id), // Cytoscape IDs should be strings
+        id: String(member.id),
         label: member.name,
         gender: member.gender,
         birth_date: member.birth_date,
         death_date: member.death_date,
         notes: member.notes,
-        // Add other relevant data here
-      }
-    });
-
-    // Add edges based on relationships_from (avoids duplicates)
-    member.relationships_from.forEach(relation => {
-      const edgeId = `rel-${relation.id}`;
-      if (!edgeIds.has(edgeId)) {
-        elements.push({
-          data: {
-            id: edgeId,
-            source: String(relation.from_member_id),
-            target: String(relation.to_member_id),
-            label: relation.relation_type // Optional: label edges
-            // Add other relation data if needed
-          }
-        });
-        edgeIds.add(edgeId);
+        is_descendant: member.is_descendant, // Include the flag
       }
     });
   });
+
+  // 2. Create edge elements, filtering ALL outgoing edges from non-descendants
+  members.forEach(member => {
+    // Iterate through relationships where the current 'member' is the source
+    member.relationships_from.forEach(relation => {
+      const edgeId = `rel-${relation.id}`;
+      const sourceId = String(relation.from_member_id); // This is member.id
+      const targetId = String(relation.to_member_id);
+      const sourceMember = memberMap.get(sourceId); // Get source member info
+
+      // PRIMARY FILTER: Only process edges originating from descendants
+      if (sourceMember && sourceMember.is_descendant === true) {
+        // Secondary Filter: Filter out duplicates and 'child' relationships (implied by 'parent')
+        // Use direct string comparison assuming backend sends strings
+        if (!edgeIds.has(edgeId) && relation.relation_type !== 'CHILD') {
+          // Add the edge (any type originating from a descendant)
+          elements.push({ data: { id: edgeId, source: sourceId, target: targetId, label: relation.relation_type } });
+          edgeIds.add(edgeId);
+        }
+      } else {
+        // Optionally log skipped edges from non-descendants
+        // console.log(`[EDGE SKIP] Skipping edge ${edgeId} (${relation.relation_type}) from non-descendant ${sourceId}`);
+      }
+    });
+  });
+
+  // Removed edge sorting logic
 
   return elements;
 };
 
 
 const FamilyTree = () => {
+  // console.log("--- FamilyTree Component Rendering ---"); // Remove log
   const { t } = useTranslation();
   const [elements, setElements] = useState([]); // State for graph elements
   const [loading, setLoading] = useState(true); // State for loading indicator
@@ -59,6 +71,7 @@ const FamilyTree = () => {
   };
 
   useEffect(() => {
+    // console.log("--- FamilyTree useEffect Running ---"); // Remove log
     const fetchData = async () => {
       try {
         setLoading(true);
