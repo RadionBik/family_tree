@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import FamilyMember # Import the ORM model
+from app.models import FamilyMember, Relation # Import the ORM models
 from app.schemas.family import FamilyMemberRead # Import the Pydantic schema for response
 
 logger = logging.getLogger(__name__)
@@ -27,10 +27,12 @@ async def get_all_family_members(db: AsyncSession) -> List[FamilyMemberRead]:
         stmt = (
             select(FamilyMember)
             .options(
-                selectinload(FamilyMember.relationships_from).selectinload(FamilyMember.from_member), # Load relation and the 'from' member
-                selectinload(FamilyMember.relationships_from).selectinload(FamilyMember.to_member),   # Load relation and the 'to' member
-                selectinload(FamilyMember.relationships_to).selectinload(FamilyMember.from_member), # Load relation and the 'from' member
-                selectinload(FamilyMember.relationships_to).selectinload(FamilyMember.to_member)    # Load relation and the 'to' member
+                # Load relationships originating FROM this member, and then load the members involved in those relationships
+                selectinload(FamilyMember.relationships_from).selectinload(Relation.from_member),
+                selectinload(FamilyMember.relationships_from).selectinload(Relation.to_member),
+                # Load relationships pointing TO this member, and then load the members involved in those relationships
+                selectinload(FamilyMember.relationships_to).selectinload(Relation.from_member),
+                selectinload(FamilyMember.relationships_to).selectinload(Relation.to_member)
             )
             .order_by(FamilyMember.id) # Optional: order by ID or name
         )
@@ -42,6 +44,8 @@ async def get_all_family_members(db: AsyncSession) -> List[FamilyMemberRead]:
         family_members = result.unique().scalars().all()
 
         logger.info(f"Successfully fetched {len(family_members)} family members.")
+        # Log the actual data being returned (or lack thereof)
+        logger.debug(f"Family members data being returned: {family_members}")
         # The API layer will convert these ORM objects to Pydantic models (FamilyMemberRead)
         return list(family_members)
 

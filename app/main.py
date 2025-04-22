@@ -26,16 +26,16 @@ log_file = os.path.join(log_dir, 'family_tree.log')
 file_handler = RotatingFileHandler(log_file, maxBytes=10240, backupCount=10)
 file_handler.setFormatter(logging.Formatter(
     '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
-file_handler.setLevel(logging.INFO)
+file_handler.setLevel(logging.DEBUG) # Change level to DEBUG
 
 # Configure stream handler (console output)
 stream_handler = logging.StreamHandler()
 stream_handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
-stream_handler.setLevel(logging.INFO)
+stream_handler.setLevel(logging.DEBUG) # Change level to DEBUG
 
 # Get root logger and add handlers
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG) # Change level to DEBUG
 logger.addHandler(file_handler)
 logger.addHandler(stream_handler)
 
@@ -130,9 +130,9 @@ async def generic_exception_handler(request: Request, exc: Exception):
 
 # --- API Routers ---
 # Include routers from the api module
-app.include_router(family_router.router, prefix="/api/v1", tags=["Family"])
-app.include_router(birthdays_router.router, prefix="/api/v1", tags=["Birthdays"])
-app.include_router(subscriptions_router.router, prefix="/api/v1", tags=["Subscriptions"])
+app.include_router(family_router.router, prefix="/api", tags=["Family"]) # Remove /v1
+app.include_router(birthdays_router.router, prefix="/api", tags=["Birthdays"]) # Remove /v1
+app.include_router(subscriptions_router.router, prefix="/api", tags=["Subscriptions"]) # Remove /v1
 # Add other routers here later
 logger.info("API routers included.")
 # -----------------

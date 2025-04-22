@@ -1,10 +1,19 @@
 from datetime import date, datetime
+import enum # Import the enum module
 from typing import Optional
-from sqlalchemy import Integer, String, Date, DateTime, ForeignKey, UniqueConstraint, func
+from sqlalchemy import Integer, String, Date, DateTime, ForeignKey, UniqueConstraint, func, Enum as SQLAlchemyEnum # Import Enum from SQLAlchemy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.utils.database import Base
 # Import FamilyMember for type hinting, use quotes if circular dependency is an issue initially
 # from .family_member import FamilyMember
+
+# Define Relation Type Enum
+class RelationTypeEnum(enum.Enum):
+    PARENT = "PARENT"
+    CHILD = "CHILD"
+    SPOUSE = "SPOUSE"
+    SIBLING = "SIBLING"
+    # Add other types as needed
 
 class Relation(Base):
     __tablename__ = 'relations'
@@ -14,12 +23,13 @@ class Relation(Base):
     from_member_id: Mapped[int] = mapped_column(Integer, ForeignKey('family_members.id'), nullable=False, index=True)
     # Foreign key linking to the 'target' member of the relationship
     to_member_id: Mapped[int] = mapped_column(Integer, ForeignKey('family_members.id'), nullable=False, index=True)
-    # Type of relationship (e.g., 'parent', 'child', 'spouse', 'sibling')
-    relation_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    # Use SQLAlchemyEnum, referencing the Python Enum. Store values as strings in DB.
+    relation_type: Mapped[RelationTypeEnum] = mapped_column(SQLAlchemyEnum(RelationTypeEnum, name="relation_type_enum"), nullable=False, index=True)
     start_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True) # e.g., marriage date
     end_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)   # e.g., divorce date
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.utcnow())
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=func.utcnow(), onupdate=func.utcnow())
+    # Use Python's datetime.utcnow for default/onupdate with SQLite
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Define relationships to the FamilyMember model using back_populates
     # Ensure FamilyMember model also defines the corresponding relationship with back_populates

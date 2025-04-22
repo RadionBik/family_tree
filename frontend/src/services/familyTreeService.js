@@ -1,13 +1,15 @@
 import apiClient from './api';
 
-const getFamilyTreeData = () => {
-  // Placeholder: Replace with actual API call when backend is ready
-  console.log('Fetching family tree data...');
-  // Example API call structure:
-  // return apiClient.get('/family-tree');
-
-  // Return mock data for now
-  return Promise.resolve({ data: { /* Mock tree structure */ } });
+const getFamilyTreeData = async () => {
+  console.log('Fetching family tree data from API...');
+  try {
+    const response = await apiClient.get('/family/tree'); // Use the correct endpoint
+    return response.data; // Return the actual data from the response
+  } catch (error) {
+    console.error('Error fetching family tree data:', error);
+    // Re-throw the error or return a specific error structure
+    throw error;
+  }
 };
 
 export default {

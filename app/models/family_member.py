@@ -1,8 +1,15 @@
 from datetime import date, datetime
+import enum # Import the enum module
 from typing import List, Optional # For relationship type hints
-from sqlalchemy import Integer, String, Date, DateTime, Text, func
+from sqlalchemy import Integer, String, Date, DateTime, Text, func, Enum as SQLAlchemyEnum # Import Enum from SQLAlchemy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.utils.database import Base
+
+# Define Gender Enum
+class GenderEnum(enum.Enum):
+    MALE = "MALE"
+    FEMALE = "FEMALE"
+    OTHER = "OTHER"
 
 class FamilyMember(Base):
     __tablename__ = 'family_members'
@@ -12,10 +19,12 @@ class FamilyMember(Base):
     name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     birth_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     death_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
-    gender: Mapped[Optional[str]] = mapped_column(String(10), nullable=True) # e.g., 'Male', 'Female', 'Other'
+    # Use SQLAlchemyEnum, referencing the Python Enum. Store values as strings in DB.
+    gender: Mapped[Optional[GenderEnum]] = mapped_column(SQLAlchemyEnum(GenderEnum, name="gender_enum"), nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.utcnow())
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=func.utcnow(), onupdate=func.utcnow())
+    # Use Python's datetime.utcnow for default/onupdate with SQLite
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships (will be defined properly when Relation model is updated)
     # Define relationships to the Relation model using back_populates
