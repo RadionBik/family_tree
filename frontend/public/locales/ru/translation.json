@@ -1,0 +1,32 @@
+{
+  "header": {
+    "title": "Семейное Древо"
+  },
+  "footer": {
+    "copyright": "© {{year}} Семейное Древо. Все права защищены."
+  },
+  "birthdayTimeline": {
+    "title": "Лента дней рождений",
+    "noBirthdays": "Нет предстоящих дней рождений.",
+    "turnsAge": "Исполняется {{age}}"
+  },
+  "familyTree": {
+    "title": "Граф семейного древа",
+    "placeholder": "[Визуализация семейного древа будет здесь]",
+    "requiresIntegration": "(Требуется интеграция библиотеки)"
+  },
+  "adminLogin": {
+    "title": "Вход для администратора",
+    "usernameLabel": "Имя пользователя:",
+    "passwordLabel": "Пароль:",
+    "loginButton": "Войти",
+    "alertNotImplemented": "Логика входа администратора еще не реализована."
+  },
+  "subscriptionForm": {
+    "title": "Подписка на уведомления",
+    "nameLabel": "Имя:",
+    "emailLabel": "Email:",
+    "subscribeButton": "Подписаться",
+    "alertNotImplemented": "Логика подписки еще не реализована."
+  }
+}

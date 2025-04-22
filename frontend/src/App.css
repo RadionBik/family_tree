@@ -1,0 +1,146 @@
+/* Basic Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: sans-serif;
+  line-height: 1.6;
+  background-color: #f4f4f4;
+  color: #333;
+}
+
+/* Layout Container */
+.layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Header Styles */
+.header {
+  background: #333;
+  color: #fff;
+  padding: 1rem 0;
+  text-align: center;
+}
+
+.header h1 {
+  margin: 0;
+}
+
+/* Main Content Area */
+.main-content {
+  flex: 1; /* Allows content to grow and push footer down */
+  padding: 1rem;
+  max-width: 1200px; /* Limit content width */
+  margin: 1rem auto; /* Center content */
+  width: 95%; /* Responsive width */
+}
+
+/* Footer Styles */
+.footer {
+  background: #333;
+  color: #fff;
+  text-align: center;
+  padding: 1rem 0;
+  margin-top: auto; /* Pushes footer to the bottom */
+}
+
+/* Grid for HomePage sections (basic example) */
+.home-page-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Responsive grid */
+  gap: 1rem;
+}
+
+.home-page-grid section {
+  background: #fff;
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+.home-page-grid h2 {
+  margin-bottom: 0.5rem;
+  color: #555;
+}
+
+/* Add more specific styles as needed */
+
+/* Birthday Timeline Styles */
+.birthday-timeline ul {
+  list-style: none;
+  padding: 0;
+}
+
+.birthday-timeline li {
+  background-color: #e9e9e9;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 3px;
+}
+
+.birthday-timeline li strong {
+  color: #0056b3;
+}
+
+/* Family Tree Placeholder Styles */
+.family-tree .tree-placeholder {
+  border: 2px dashed #ccc;
+  padding: 2rem;
+  text-align: center;
+  color: #888;
+  min-height: 200px; /* Give it some height */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+/* Form Styles */
+.admin-login form,
+.subscription-form form {
+  margin-top: 1rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-weight: bold;
+  color: #444;
+}
+
+.form-group input[type="text"],
+.form-group input[type="password"],
+.form-group input[type="email"] {
+  width: 100%;
+  padding: 0.7rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+button[type="submit"] {
+  display: inline-block;
+  background-color: #007bff;
+  color: white;
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+button[type="submit"]:hover {
+  background-color: #0056b3;
+}

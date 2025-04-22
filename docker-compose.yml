@@ -28,3 +28,24 @@ services:
 # Optional: Define a volume for the database if not mounting a host directory
 # volumes:
 #   app_data:
+
+  frontend:
+    build:
+      context: ./frontend # Path to the frontend directory
+      dockerfile: Dockerfile
+    container_name: family_tree_frontend
+    ports:
+      - "3000:3000" # Map host port 3000 to container port 3000 (serve default)
+    volumes:
+      # Mount source code for development (optional, remove for production build)
+      # Note: Changes won't reflect immediately due to build stage unless dev server is used in Dockerfile
+      - ./frontend/src:/app/src
+    environment:
+      # Ensure Node environment is set if needed by build tools
+      - NODE_ENV=development
+      # Point API requests to the backend service within Docker network
+      # This requires updating the frontend code to use this variable
+      - VITE_API_BASE_URL=http://web:8000/api
+    depends_on:
+      - web # Frontend depends on the backend API
+    restart: unless-stopped

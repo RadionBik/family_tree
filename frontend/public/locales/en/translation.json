@@ -1,0 +1,32 @@
+{
+  "header": {
+    "title": "Family Tree"
+  },
+  "footer": {
+    "copyright": "© {{year}} Family Tree. All rights reserved."
+  },
+  "birthdayTimeline": {
+    "title": "Birthday Timeline",
+    "noBirthdays": "No upcoming birthdays.",
+    "turnsAge": "Turns {{age}}"
+  },
+  "familyTree": {
+    "title": "Family Tree Graph",
+    "placeholder": "[Family tree visualization will be here]",
+    "requiresIntegration": "(Requires library integration)"
+  },
+  "adminLogin": {
+    "title": "Admin Login",
+    "usernameLabel": "Username:",
+    "passwordLabel": "Password:",
+    "loginButton": "Login",
+    "alertNotImplemented": "Admin login logic not yet implemented."
+  },
+  "subscriptionForm": {
+    "title": "Subscribe for Notifications",
+    "nameLabel": "Name:",
+    "emailLabel": "Email:",
+    "subscribeButton": "Subscribe",
+    "alertNotImplemented": "Subscription logic not yet implemented."
+  }
+}
