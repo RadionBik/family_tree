@@ -13,7 +13,8 @@
   "familyTree": {
     "title": "Граф семейного древа",
     "placeholder": "[Визуализация семейного древа будет здесь]",
-    "requiresIntegration": "(Требуется интеграция библиотеки)"
+    "requiresIntegration": "(Требуется интеграция библиотеки)",
+    "detailsTitle": "Детали"
   },
   "adminLogin": {
     "title": "Вход для администратора",
@@ -28,5 +29,17 @@
     "emailLabel": "Email:",
     "subscribeButton": "Подписаться",
     "alertNotImplemented": "Логика подписки еще не реализована."
-  }
+  },
+  "name": "Имя",
+  "birthDate": "Дата рождения",
+  "deathDate": "Дата смерти",
+  "genderLabel": "Пол",
+  "gender": {
+    "male": "Мужской",
+    "female": "Женский",
+    "other": "Другой"
+  },
+  "notes": "Заметки",
+  "close": "Закрыть",
+  "loading": "Загрузка"
 }

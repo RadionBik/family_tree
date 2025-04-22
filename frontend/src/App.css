@@ -35,9 +35,9 @@ body {
 .main-content {
   flex: 1; /* Allows content to grow and push footer down */
   padding: 1rem;
-  max-width: 1200px; /* Limit content width */
-  margin: 1rem auto; /* Center content */
-  width: 95%; /* Responsive width */
+  /* max-width: 1200px; */ /* Removed width limit */
+  margin: 1rem 0; /* Removed auto margin for centering */
+  width: 100%; /* Use full width */
 }
 
 /* Footer Styles */
@@ -51,9 +51,9 @@ body {
 
 /* Grid for HomePage sections (basic example) */
 .home-page-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Responsive grid */
-  gap: 1rem;
+  /* display: grid; */ /* Removed grid layout */
+  /* grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); */
+  /* gap: 1rem; */ /* Gap is irrelevant without grid */
 }
 
 .home-page-grid section {
@@ -61,6 +61,7 @@ body {
   padding: 1rem;
   border: 1px solid #ddd;
   border-radius: 5px;
+  overflow: auto; /* Allow scrolling if content overflows */
 }
 
 .home-page-grid h2 {

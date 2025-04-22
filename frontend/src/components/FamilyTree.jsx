@@ -98,7 +98,7 @@ const FamilyTree = () => {
       )}
 
       {/* Render Legend if graph is displayed */}
-      {!loading && !error && elements.length > 0 && <GraphLegend />}
+      {/* {!loading && !error && elements.length > 0 && <GraphLegend />} */} {/* Removed Legend */}
 
       {/* Display selected member details */}
       {selectedMember && (
@@ -107,7 +107,7 @@ const FamilyTree = () => {
           <p><strong>{t('name')}:</strong> {selectedMember.label}</p>
           {selectedMember.birth_date && <p><strong>{t('birthDate')}:</strong> {selectedMember.birth_date}</p>}
           {selectedMember.death_date && <p><strong>{t('deathDate')}:</strong> {selectedMember.death_date}</p>}
-          {selectedMember.gender && <p><strong>{t('gender')}:</strong> {t(`gender.${selectedMember.gender}`, selectedMember.gender)}</p>}
+          {selectedMember.gender && <p><strong>{t('genderLabel')}:</strong> {t(`gender.${selectedMember.gender}`, selectedMember.gender)}</p>}
           {selectedMember.notes && <p><strong>{t('notes')}:</strong> {selectedMember.notes}</p>}
           {/* Add more details as needed */}
           <button onClick={() => setSelectedMember(null)} style={{ marginTop: '10px' }}>
