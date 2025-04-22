@@ -1,18 +1,21 @@
 from datetime import datetime
+from typing import Optional
 from werkzeug.security import generate_password_hash, check_password_hash
-from app.utils.database import db
+from sqlalchemy import Integer, String, DateTime, Boolean, func
+from sqlalchemy.orm import Mapped, mapped_column
+from app.utils.database import Base
 
-class AdminUser(db.Model):
+class AdminUser(Base):
     __tablename__ = 'admin_users'
 
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False, index=True)
-    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
-    password_hash = db.Column(db.String(256), nullable=False) # Increased length for stronger hashes
-    role = db.Column(db.String(50), default='admin', nullable=False) # e.g., 'admin', 'editor'
-    is_active = db.Column(db.Boolean, default=True, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    last_login = db.Column(db.DateTime, nullable=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(80), unique=True, nullable=False, index=True)
+    email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False, index=True)
+    password_hash: Mapped[str] = mapped_column(String(256), nullable=False)
+    role: Mapped[str] = mapped_column(String(50), default='admin', nullable=False) # e.g., 'admin', 'editor'
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.utcnow())
+    last_login: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     @property
     def password(self):
@@ -21,6 +24,7 @@ class AdminUser(db.Model):
     @password.setter
     def password(self, password):
         """Hashes the password and stores the hash."""
+        # Consider using a dedicated password hashing library like passlib for more options
         self.password_hash = generate_password_hash(password)
 
     def verify_password(self, password):
@@ -30,7 +34,4 @@ class AdminUser(db.Model):
     def __repr__(self):
         return f'<AdminUser {self.username} ({self.role})>'
 
-    # Add validation for email format if needed
-    # def validate_email(self):
-    #     # ... (similar to SubscribedEmail)
-    #     pass
+    # Email validation is typically handled at the API layer using Pydantic models in FastAPI

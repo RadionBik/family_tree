@@ -1,26 +1,43 @@
-from datetime import datetime
-from app.utils.database import db
+from datetime import date, datetime
+from typing import List, Optional # For relationship type hints
+from sqlalchemy import Integer, String, Date, DateTime, Text, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from app.utils.database import Base
 
-class FamilyMember(db.Model):
+class FamilyMember(Base):
     __tablename__ = 'family_members'
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False, index=True)
-    birth_date = db.Column(db.Date, nullable=True)
-    death_date = db.Column(db.Date, nullable=True)
-    gender = db.Column(db.String(10), nullable=True) # e.g., 'Male', 'Female', 'Other'
-    notes = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # Columns using SQLAlchemy 2.0 type-annotated style
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    birth_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    death_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    gender: Mapped[Optional[str]] = mapped_column(String(10), nullable=True) # e.g., 'Male', 'Female', 'Other'
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.utcnow())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=func.utcnow(), onupdate=func.utcnow())
 
-    # Relationships (defined later in Relation model using backref or similar)
-    # relationships_from = db.relationship('Relation', foreign_keys='Relation.from_member_id', backref='from_member', lazy='dynamic')
-    # relationships_to = db.relationship('Relation', foreign_keys='Relation.to_member_id', backref='to_member', lazy='dynamic')
+    # Relationships (will be defined properly when Relation model is updated)
+    # Define relationships to the Relation model using back_populates
+    # relationships_from: Represents relations where this member is the 'source' (from_member)
+    relationships_from: Mapped[List["Relation"]] = relationship(
+        "Relation",
+        foreign_keys="Relation.from_member_id",
+        back_populates="from_member",
+        cascade="all, delete-orphan" # Optional: if deleting a member should delete their relations
+    )
+    # relationships_to: Represents relations where this member is the 'target' (to_member)
+    relationships_to: Mapped[List["Relation"]] = relationship(
+        "Relation",
+        foreign_keys="Relation.to_member_id",
+        back_populates="to_member",
+        cascade="all, delete-orphan" # Optional: if deleting a member should delete their relations
+    )
 
     def __repr__(self):
         return f'<FamilyMember {self.name} (ID: {self.id})>'
 
-    # Add data validation methods if needed
+    # Add data validation methods if needed (using Pydantic models is often preferred in FastAPI)
     # def validate_gender(self):
     #     allowed_genders = ['Male', 'Female', 'Other', None]
     #     if self.gender not in allowed_genders:

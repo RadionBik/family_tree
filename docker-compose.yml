@@ -5,7 +5,7 @@ services:
     build: .
     container_name: family_tree_web
     ports:
-      - "5000:5000" # Map host port 5000 to container port 5000
+      - "8000:8000" # Map host port 8000 to container port 8000 (Uvicorn default)
     volumes:
       - .:/app # Mount the current directory to /app in the container for live code changes
       - ./logs:/app/logs # Mount logs directory
@@ -15,10 +15,9 @@ services:
       - ./data:/app/data # Mount a data directory for the SQLite DB
     environment:
       # Load environment variables from .env file
-      - FLASK_APP=app/main.py
-      - FLASK_CONFIG=development
-      # Override database URI to use the mounted volume
-      - DATABASE_URL=sqlite:////app/data/app.db
+      - APP_ENV=development # Use APP_ENV for FastAPI config
+      # Override database URI to use the mounted volume with async prefix
+      - DATABASE_URL=sqlite+aiosqlite:////app/data/app.db
       # You can add other environment variables here or load from an .env file
       # env_file:
       #   - .env

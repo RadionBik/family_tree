@@ -1,33 +1,49 @@
-from datetime import datetime
-from app.utils.database import db
+from datetime import date, datetime
+from typing import Optional
+from sqlalchemy import Integer, String, Date, DateTime, ForeignKey, UniqueConstraint, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from app.utils.database import Base
+# Import FamilyMember for type hinting, use quotes if circular dependency is an issue initially
+# from .family_member import FamilyMember
 
-class Relation(db.Model):
+class Relation(Base):
     __tablename__ = 'relations'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     # Foreign key linking to the 'source' member of the relationship
-    from_member_id = db.Column(db.Integer, db.ForeignKey('family_members.id'), nullable=False, index=True)
+    from_member_id: Mapped[int] = mapped_column(Integer, ForeignKey('family_members.id'), nullable=False, index=True)
     # Foreign key linking to the 'target' member of the relationship
-    to_member_id = db.Column(db.Integer, db.ForeignKey('family_members.id'), nullable=False, index=True)
+    to_member_id: Mapped[int] = mapped_column(Integer, ForeignKey('family_members.id'), nullable=False, index=True)
     # Type of relationship (e.g., 'parent', 'child', 'spouse', 'sibling')
-    relation_type = db.Column(db.String(50), nullable=False, index=True)
-    start_date = db.Column(db.Date, nullable=True) # e.g., marriage date
-    end_date = db.Column(db.Date, nullable=True)   # e.g., divorce date
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    relation_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    start_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True) # e.g., marriage date
+    end_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)   # e.g., divorce date
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.utcnow())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=func.utcnow(), onupdate=func.utcnow())
 
-    # Define relationships to the FamilyMember model
-    # Allows accessing the related FamilyMember objects directly
-    from_member = db.relationship('FamilyMember', foreign_keys=[from_member_id], backref=db.backref('relationships_from', lazy='dynamic'))
-    to_member = db.relationship('FamilyMember', foreign_keys=[to_member_id], backref=db.backref('relationships_to', lazy='dynamic'))
+    # Define relationships to the FamilyMember model using back_populates
+    # Ensure FamilyMember model also defines the corresponding relationship with back_populates
+    from_member: Mapped["FamilyMember"] = relationship(
+        "FamilyMember",
+        foreign_keys=[from_member_id],
+        back_populates="relationships_from" # Matches the name in FamilyMember
+    )
+    to_member: Mapped["FamilyMember"] = relationship(
+        "FamilyMember",
+        foreign_keys=[to_member_id],
+        back_populates="relationships_to" # Matches the name in FamilyMember
+    )
 
     # Ensure a unique combination of from, to, and type to avoid duplicate relationships
-    __table_args__ = (db.UniqueConstraint('from_member_id', 'to_member_id', 'relation_type', name='_from_to_type_uc'),)
+    __table_args__ = (UniqueConstraint('from_member_id', 'to_member_id', 'relation_type', name='_from_to_type_uc'),)
 
     def __repr__(self):
-        return f'<Relation {self.from_member_id} -> {self.to_member_id} ({self.relation_type})>'
+        # Use relationship properties if loaded, otherwise IDs
+        from_name = self.from_member.name if self.from_member else self.from_member_id
+        to_name = self.to_member.name if self.to_member else self.to_member_id
+        return f'<Relation {from_name} -> {to_name} ({self.relation_type})>'
 
-    # Add validation if needed
+    # Add validation if needed (Pydantic models preferred in FastAPI)
     # def validate_relation_type(self):
     #     allowed_types = ['parent', 'child', 'spouse', 'sibling'] # Example types
     #     if self.relation_type not in allowed_types:

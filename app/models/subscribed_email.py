@@ -1,23 +1,23 @@
 from datetime import datetime
-from app.utils.database import db
+from sqlalchemy import Integer, String, DateTime, Boolean, func
+from sqlalchemy.orm import Mapped, mapped_column
+from app.utils.database import Base
 
-class SubscribedEmail(db.Model):
+class SubscribedEmail(Base):
     __tablename__ = 'subscribed_emails'
 
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
-    subscription_date = db.Column(db.DateTime, default=datetime.utcnow)
-    is_active = db.Column(db.Boolean, default=True, nullable=False)
-    last_updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    email: Mapped[str] = mapped_column(String(120), unique=True, nullable=False, index=True)
+    subscription_date: Mapped[datetime] = mapped_column(DateTime, default=func.utcnow())
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    last_updated: Mapped[datetime] = mapped_column(DateTime, default=func.utcnow(), onupdate=func.utcnow())
 
     def __repr__(self):
         status = 'Active' if self.is_active else 'Inactive'
         return f'<SubscribedEmail {self.email} ({status})>'
 
-    # Add validation for email format if needed using libraries like email_validator
-    # def validate_email(self):
-    #     from email_validator import validate_email, EmailNotValidError
-    #     try:
-    #         validate_email(self.email)
-    #     except EmailNotValidError as e:
-    #         raise ValueError(str(e))
+    # Email validation is typically handled at the API layer using Pydantic models in FastAPI
+    # Example Pydantic model (would go in a schemas.py or similar):
+    # from pydantic import BaseModel, EmailStr
+    # class EmailSchema(BaseModel):
+    #     email: EmailStr
