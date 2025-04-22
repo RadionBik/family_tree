@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: family_tree_web
+    ports:
+      - "5000:5000" # Map host port 5000 to container port 5000
+    volumes:
+      - .:/app # Mount the current directory to /app in the container for live code changes
+      - ./logs:/app/logs # Mount logs directory
+      # Persist SQLite database file outside the container
+      # Note: For production, consider a more robust database solution (PostgreSQL, MySQL)
+      # and manage its data volume separately.
+      - ./data:/app/data # Mount a data directory for the SQLite DB
+    environment:
+      # Load environment variables from .env file
+      - FLASK_APP=app/main.py
+      - FLASK_CONFIG=development
+      # Override database URI to use the mounted volume
+      - DATABASE_URL=sqlite:////app/data/app.db
+      # You can add other environment variables here or load from an .env file
+      # env_file:
+      #   - .env
+    # depends_on:
+      # - db # If you were using a separate database container
+    restart: unless-stopped
+
+# Optional: Define a volume for the database if not mounting a host directory
+# volumes:
+#   app_data:
