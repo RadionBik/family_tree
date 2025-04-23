@@ -1,31 +1,70 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import birthdayService from '../services/birthdayService';
 
-// Placeholder data (Consider moving or fetching this later)
-const placeholderBirthdays = [
-  { id: 1, name: 'Иван Петров', date: '25 апреля', age: 30 }, // Example data, keep for now
-  { id: 2, name: 'Мария Сидорова', date: '1 мая', age: 25 },
-  { id: 3, name: 'Алексей Иванов', date: '15 мая', age: 42 },
-];
+// Helper function to format date in Russian (e.g., "25 апреля")
+const formatRussianDate = (isoDateString) => {
+  if (!isoDateString) return '';
+  const date = new Date(isoDateString);
+  return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' }).format(date);
+};
+
+// Helper function to calculate upcoming age
+const calculateUpcomingAge = (dateOfBirth, nextBirthdayDate) => {
+  if (!dateOfBirth || !nextBirthdayDate) return '?';
+  const birthYear = new Date(dateOfBirth).getFullYear();
+  const nextBirthdayYear = new Date(nextBirthdayDate).getFullYear();
+  return nextBirthdayYear - birthYear;
+};
+
 
 const BirthdayTimeline = () => {
   const { t } = useTranslation();
+  const [birthdays, setBirthdays] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchBirthdays = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        // Fetch using the default window (90 days) defined in the service
+        const response = await birthdayService.getUpcomingBirthdays();
+        // Assuming API returns data sorted chronologically and filtered for living members
+        setBirthdays(response.data || []);
+      } catch (err) {
+        console.error("Error fetching birthdays:", err);
+        setError(t('birthdayTimeline.error')); // Use translation for error message
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBirthdays();
+  }, [t]); // Add t to dependency array if translations change
 
   return (
     <section className="birthday-timeline">
       <h2>{t('birthdayTimeline.title')}</h2>
-      {placeholderBirthdays.length > 0 ? (
+      {loading && <p>{t('birthdayTimeline.loading')}</p>}
+      {error && <p className="error-message">{error}</p>}
+      {!loading && !error && birthdays.length > 0 ? (
         <ul>
-          {placeholderBirthdays.map(birthday => (
-            <li key={birthday.id}>
-              <strong>{birthday.name}</strong> - {birthday.date} ({t('birthdayTimeline.turnsAge', { age: birthday.age })})
-            </li>
-          ))}
+          {birthdays.map(birthday => {
+            // Use correct property names from the API response (birth_date, member_id)
+            const upcomingAge = calculateUpcomingAge(birthday.birth_date, birthday.next_birthday_date);
+            const formattedDate = formatRussianDate(birthday.next_birthday_date);
+            return (
+              <li key={birthday.member_id}>
+                <strong>{birthday.name}</strong> - {formattedDate} ({t('birthdayTimeline.turnsAge', { age: upcomingAge })})
+              </li>
+            );
+          })}
         </ul>
       ) : (
-        <p>{t('birthdayTimeline.noBirthdays')}</p>
+        !loading && !error && <p>{t('birthdayTimeline.noBirthdays')}</p>
       )}
-      {/* Add loading state later */}
     </section>
   );
 };

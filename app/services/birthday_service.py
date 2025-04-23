@@ -30,7 +30,7 @@ def calculate_age(birth_date: date, on_date: date) -> int:
     age = on_date.year - birth_date.year - ((on_date.month, on_date.day) < (birth_date.month, birth_date.day))
     return age
 
-async def get_upcoming_birthdays(db: AsyncSession, days: int = 30) -> List[UpcomingBirthdayRead]:
+async def get_upcoming_birthdays(db: AsyncSession, days: int = 90) -> List[UpcomingBirthdayRead]:
     """
     Fetches family members with birthdays in the upcoming specified number of days.
 
@@ -46,8 +46,11 @@ async def get_upcoming_birthdays(db: AsyncSession, days: int = 30) -> List[Upcom
     end_date = today + timedelta(days=days)
 
     try:
-        # Query members with birth dates
-        stmt = select(FamilyMember).where(FamilyMember.birth_date.isnot(None))
+        # Query living members with birth dates
+        stmt = select(FamilyMember).where(
+            FamilyMember.birth_date.isnot(None),
+            FamilyMember.death_date.is_(None) # Only include members who are alive
+        )
         result = await db.execute(stmt)
         members = result.scalars().all()
 
