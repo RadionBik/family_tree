@@ -64,18 +64,22 @@ const transformDataForCytoscape = (members) => {
 };
 
 
-const FamilyTree = () => {
+// Accept selectedMemberId and onMemberSelect from HomePage
+const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
   // console.log("--- FamilyTree Component Rendering ---"); // Remove log
   const { t } = useTranslation();
   const [elements, setElements] = useState([]); // State for graph elements
   const [loading, setLoading] = useState(true); // State for loading indicator
   const [error, setError] = useState(null); // State for error handling
-  const [selectedMember, setSelectedMember] = useState(null); // State for selected node data
+  // Removed internal selectedMember state, now managed by HomePage
 
-  // Handler for node clicks from the graph component
+  // Handler for node clicks from the graph component - uses prop from HomePage
   const handleNodeClick = (nodeData) => {
-    console.log("Node clicked in parent:", nodeData);
-    setSelectedMember(nodeData);
+    console.log("Node clicked in FamilyTree, calling onMemberSelect:", nodeData);
+    // If the clicked node is already selected, deselect it, otherwise select it
+    if (onMemberSelect) {
+        onMemberSelect(selectedMemberId === nodeData?.id ? null : nodeData?.id);
+    }
   };
 
   useEffect(() => {
@@ -120,8 +124,8 @@ const FamilyTree = () => {
       {!loading && !error && elements.length > 0 && (
         <FamilyTreeGraph
           elements={elements}
-          onNodeClick={handleNodeClick}
-          selectedNodeId={selectedMember?.id} // Pass the selected node ID
+          onNodeClick={handleNodeClick} // Pass the updated handler
+          selectedNodeId={selectedMemberId} // Pass the ID from props
         />
       )}
       {!loading && !error && elements.length === 0 && (
@@ -131,21 +135,34 @@ const FamilyTree = () => {
       {/* Render Legend if graph is displayed */}
       {!loading && !error && elements.length > 0 && <GraphLegend />} {/* Render Legend */}
 
-      {/* Display selected member details */}
-      {selectedMember && (
-        <div className="member-details" style={{ marginTop: '20px', padding: '15px', border: '1px solid #eee' }}>
-          <h3>{t('familyTree.detailsTitle')}</h3>
-          <p><strong>{t('name')}:</strong> {selectedMember.label}</p>
-          {selectedMember.birth_date && <p><strong>{t('birthDate')}:</strong> {selectedMember.birth_date}</p>}
-          {selectedMember.death_date && <p><strong>{t('deathDate')}:</strong> {selectedMember.death_date}</p>}
-          {selectedMember.gender && <p><strong>{t('genderLabel')}:</strong> {t(`gender.${selectedMember.gender}`, selectedMember.gender)}</p>}
-          {selectedMember.notes && <p><strong>{t('notes')}:</strong> {selectedMember.notes}</p>}
-          {/* Add more details as needed */}
-          <button onClick={() => setSelectedMember(null)} style={{ marginTop: '10px' }}>
-            {t('close')}
-          </button>
-        </div>
-      )}
+      {/* Display selected member details based on selectedMemberId prop */}
+      {selectedMemberId && (() => {
+        // Find the selected member's data from the elements array
+        // Ensure comparison uses strings for both IDs
+        const memberElement = elements.find(el => el.data.id === String(selectedMemberId));
+        const memberData = memberElement?.data;
+
+        if (!memberData) {
+            console.warn(`Member data not found in elements for ID: ${selectedMemberId}`); // Add warning
+            return null; // Don't render if data not found
+        }
+
+        return (
+          <div className="member-details" style={{ marginTop: '20px', padding: '15px', border: '1px solid #eee' }}>
+            <h3>{t('familyTree.detailsTitle')}</h3>
+            <p><strong>{t('name')}:</strong> {memberData.label}</p>
+            {memberData.birth_date && <p><strong>{t('birthDate')}:</strong> {memberData.birth_date}</p>}
+            {memberData.death_date && <p><strong>{t('deathDate')}:</strong> {memberData.death_date}</p>}
+            {memberData.gender && <p><strong>{t('genderLabel')}:</strong> {t(`gender.${memberData.gender}`, memberData.gender)}</p>}
+            {memberData.notes && <p><strong>{t('notes')}:</strong> {memberData.notes}</p>}
+            {/* Add more details as needed */}
+            {/* Close button now calls onMemberSelect with null */}
+            <button onClick={() => onMemberSelect(null)} style={{ marginTop: '10px' }}>
+              {t('close')}
+            </button>
+          </div>
+        );
+      })()}
     </section>
   );
 };

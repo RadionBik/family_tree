@@ -18,7 +18,8 @@ const calculateUpcomingAge = (dateOfBirth, nextBirthdayDate) => {
 };
 
 
-const BirthdayTimeline = () => {
+// Accept onMemberSelect prop to notify parent of selection
+const BirthdayTimeline = ({ onMemberSelect }) => {
   const { t } = useTranslation();
   const [birthdays, setBirthdays] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,9 +56,23 @@ const BirthdayTimeline = () => {
             // Use correct property names from the API response (birth_date, member_id)
             const upcomingAge = calculateUpcomingAge(birthday.birth_date, birthday.next_birthday_date);
             const formattedDate = formatRussianDate(birthday.next_birthday_date);
+            // Handle click on the name
+            const handleNameClick = () => {
+              if (onMemberSelect) {
+                onMemberSelect(birthday.member_id);
+              }
+            };
+
             return (
               <li key={birthday.member_id}>
-                <strong>{birthday.name}</strong> - {formattedDate} ({t('birthdayTimeline.turnsAge', { age: upcomingAge })})
+                {/* Make the name clickable */}
+                <strong
+                  onClick={handleNameClick}
+                  style={{ cursor: 'pointer', textDecoration: 'underline' }} // Add basic styling
+                  title={t('birthdayTimeline.clickToHighlight')} // Add tooltip
+                >
+                  {birthday.name}
+                </strong> - {formattedDate} ({t('birthdayTimeline.turnsAge', { age: upcomingAge })})
               </li>
             );
           })}
