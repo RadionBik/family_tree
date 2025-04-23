@@ -22,6 +22,7 @@ class FamilyMember(Base):
     # Use SQLAlchemyEnum, referencing the Python Enum. Store values as strings in DB.
     gender: Mapped[Optional[GenderEnum]] = mapped_column(SQLAlchemyEnum(GenderEnum, name="gender_enum"), nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    location: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True) # Added location
     # Use Python's datetime.utcnow for default/onupdate with SQLite
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

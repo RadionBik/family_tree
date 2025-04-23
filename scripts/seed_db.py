@@ -1,124 +1,189 @@
+import os
+import sys
+import json
 import asyncio
 import logging
-from datetime import date
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import select
+from datetime import date, datetime
+from typing import Optional, List, Dict, Any
 
-# Adjust import paths based on running the script from the project root
-from app.models import FamilyMember, Relation
-from app.utils.database import DATABASE_URL, Base # Import Base from database utils
-from app.models.family_member import GenderEnum # Import the implemented GenderEnum
-from app.models.relation import RelationTypeEnum # Import the implemented RelationTypeEnum
+# Add project root to Python path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, project_root)
 
-# Configure logging for the script
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Import async components and models
+from app.utils.database import Base, AsyncSessionFactory, async_engine # Use factory now
+from app.models.family_member import FamilyMember, GenderEnum
+from app.models.relation import Relation, RelationTypeEnum
+from sqlalchemy.ext.asyncio import AsyncSession # Import AsyncSession
+from sqlalchemy import text # Import text for raw SQL if needed in clear_data
+
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-async def seed_data():
-    """Connects to the DB and inserts sample family data."""
-    if not DATABASE_URL:
-        logger.error("DATABASE_URL is not set. Cannot connect to the database.")
+# --- Configuration ---
+JSON_INPUT_PATH = os.path.join(project_root, "data/family_tree.json")
+# --- End Configuration ---
+
+# Helper to parse ISO date string or return None
+def parse_iso_date(date_str: Optional[str]) -> Optional[date]:
+    if not date_str:
+        return None
+    try:
+        return date.fromisoformat(date_str)
+    except (ValueError, TypeError):
+        logger.warning(f"Could not parse date string: {date_str}")
+        return None
+
+async def seed_database():
+    logger.info(f"Starting database seeding from JSON: {JSON_INPUT_PATH}")
+
+    try:
+        with open(JSON_INPUT_PATH, 'r', encoding='utf-8') as f:
+            members_data = json.load(f)
+    except FileNotFoundError:
+        logger.error(f"Error: JSON file not found at {JSON_INPUT_PATH}")
+        return
+    except json.JSONDecodeError:
+        logger.error(f"Error: Could not decode JSON from {JSON_INPUT_PATH}")
+        return
+    except Exception as e:
+        logger.error(f"Error reading JSON file: {e}")
         return
 
-    logger.info(f"Connecting to database: {DATABASE_URL}")
-    # Use 'future=True' for SQLAlchemy 2.0 style execution
-    engine = create_async_engine(DATABASE_URL, echo=False, future=True)
+    if not members_data:
+        logger.warning("JSON data is empty. No seeding performed.")
+        return
 
-    # Optional: Drop and recreate tables for a clean seed (Use with caution!)
-    # Commented out after initial seeding to prevent data loss
-    # async with engine.begin() as conn:
-    #     logger.warning("Dropping all tables...")
-    #     await conn.run_sync(Base.metadata.drop_all)
-    #     logger.warning("Creating all tables...")
-    #     await conn.run_sync(Base.metadata.create_all)
-    #     logger.info("Tables recreated.")
+    # Use the session factory for the seeding operation
+    async with AsyncSessionFactory() as db:
+        try:
+            members_cache: Dict[int, FamilyMember] = {} # Cache DB objects by JSON ID {json_id: db_member}
+            relations_to_add: List[Dict[str, Any]] = [] # Store relations to add later
 
-    # Create a sessionmaker bound to the engine
-    async_session = sessionmaker(
-        engine, expire_on_commit=False, class_=AsyncSession
-    )
+            logger.info(f"Processing {len(members_data)} members from JSON...")
 
-    async with async_session() as session:
-        async with session.begin():
-            logger.info("Checking for existing data...")
-            # Simple check: if any family member exists, assume DB is seeded
-            result = await session.execute(select(FamilyMember).limit(1))
-            if result.scalars().first():
-                logger.info("Database already contains data. Skipping seeding.")
-                return
+            # First pass: Create FamilyMember objects
+            for member_json in members_data:
+                json_id = member_json.get("id")
+                name = member_json.get("name")
+                if not json_id or not name:
+                    logger.warning(f"Skipping member due to missing id or name: {member_json}")
+                    continue
 
-            logger.info("Seeding database with sample data...")
+                gender_enum = None
+                if member_json.get("gender"):
+                    try:
+                        gender_enum = GenderEnum[member_json["gender"]]
+                    except KeyError:
+                        logger.warning(f"Invalid gender value '{member_json['gender']}' for member {name}. Setting to None.")
 
-            # --- Create Family Members ---
-            # Generation 1
-            grandpa_john = FamilyMember(name="John Doe", gender=GenderEnum.MALE, birth_date=date(1940, 5, 15), death_date=date(2010, 10, 20), notes="Family patriarch")
-            grandma_jane = FamilyMember(name="Jane Smith", gender=GenderEnum.FEMALE, birth_date=date(1942, 8, 25), notes="Family matriarch")
+                member_db = FamilyMember(
+                    name=name,
+                    birth_date=parse_iso_date(member_json.get("birth_date")),
+                    death_date=parse_iso_date(member_json.get("death_date")), # Assuming death_date might exist
+                    gender=gender_enum,
+                    notes=member_json.get("notes"),
+                    location=member_json.get("location")
+                    # created_at/updated_at are handled by SQLAlchemy defaults
+                )
+                db.add(member_db)
+                await db.flush() # Flush to get the actual DB ID assigned
+                members_cache[json_id] = member_db # Store with JSON ID as key
+                logger.info(f"  Created DB Member: {member_db.name} (JSON ID: {json_id}, DB ID: {member_db.id})")
 
-            # Generation 2
-            dad_peter = FamilyMember(name="Peter Doe", gender=GenderEnum.MALE, birth_date=date(1965, 3, 10))
-            mom_lisa = FamilyMember(name="Lisa Green", gender=GenderEnum.FEMALE, birth_date=date(1968, 7, 1))
-            uncle_bob = FamilyMember(name="Bob Doe", gender=GenderEnum.MALE, birth_date=date(1967, 11, 5))
+                # Store relationships for the second pass
+                for rel in member_json.get("relationships", []):
+                    relations_to_add.append({
+                        "from_json_id": json_id,
+                        "to_json_id": rel.get("target_id"),
+                        "type_str": rel.get("type")
+                    })
 
-            # Generation 3
-            son_chris = FamilyMember(name="Chris Doe", gender=GenderEnum.MALE, birth_date=date(1995, 1, 20))
-            daughter_anna = FamilyMember(name="Anna Doe", gender=GenderEnum.FEMALE, birth_date=date(1998, 6, 12))
+            logger.info("Finished creating members. Processing relationships...")
 
-            members = [
-                grandpa_john, grandma_jane, dad_peter, mom_lisa, uncle_bob, son_chris, daughter_anna
-            ]
-            session.add_all(members)
-            await session.flush() # Flush to get IDs for relationships
+            # Second pass: Create Relation objects
+            relation_cache_db = set() # Avoid duplicate DB relations {(from_db_id, to_db_id, type_enum)}
+            for rel_info in relations_to_add:
+                from_json_id = rel_info.get("from_json_id")
+                to_json_id = rel_info.get("to_json_id")
+                type_str = rel_info.get("type_str")
 
-            logger.info(f"Added {len(members)} family members.")
+                if not from_json_id or not to_json_id or not type_str:
+                    logger.warning(f"Skipping relation due to missing info: {rel_info}")
+                    continue
 
-            # --- Create Relationships ---
-            relations = [
-                # Gen 1 Spouses
-                Relation(from_member_id=grandpa_john.id, to_member_id=grandma_jane.id, relation_type=RelationTypeEnum.SPOUSE),
-                # Gen 1 -> Gen 2 Parents
-                Relation(from_member_id=grandpa_john.id, to_member_id=dad_peter.id, relation_type=RelationTypeEnum.PARENT),
-                Relation(from_member_id=grandma_jane.id, to_member_id=dad_peter.id, relation_type=RelationTypeEnum.PARENT),
-                Relation(from_member_id=grandpa_john.id, to_member_id=uncle_bob.id, relation_type=RelationTypeEnum.PARENT),
-                Relation(from_member_id=grandma_jane.id, to_member_id=uncle_bob.id, relation_type=RelationTypeEnum.PARENT),
-                # Gen 2 Spouses
-                Relation(from_member_id=dad_peter.id, to_member_id=mom_lisa.id, relation_type=RelationTypeEnum.SPOUSE),
-                 # Gen 2 -> Gen 3 Parents
-                Relation(from_member_id=dad_peter.id, to_member_id=son_chris.id, relation_type=RelationTypeEnum.PARENT),
-                Relation(from_member_id=mom_lisa.id, to_member_id=son_chris.id, relation_type=RelationTypeEnum.PARENT),
-                Relation(from_member_id=dad_peter.id, to_member_id=daughter_anna.id, relation_type=RelationTypeEnum.PARENT),
-                Relation(from_member_id=mom_lisa.id, to_member_id=daughter_anna.id, relation_type=RelationTypeEnum.PARENT),
-            ]
+                from_member_db = members_cache.get(from_json_id)
+                to_member_db = members_cache.get(to_json_id)
 
-            # Add reverse relationships automatically if needed (e.g., CHILD)
-            reverse_relations = []
-            for rel in relations:
-                if rel.relation_type == RelationTypeEnum.PARENT:
-                    reverse_relations.append(Relation(from_member_id=rel.to_member_id, to_member_id=rel.from_member_id, relation_type=RelationTypeEnum.CHILD))
-                elif rel.relation_type == RelationTypeEnum.SPOUSE:
-                     # Add spouse relationship in the other direction too for completeness
-                    reverse_relations.append(Relation(from_member_id=rel.to_member_id, to_member_id=rel.from_member_id, relation_type=RelationTypeEnum.SPOUSE))
-                # Add other reverse types if necessary (e.g., SIBLING)
+                if not from_member_db or not to_member_db:
+                    logger.warning(f"Skipping relation due to missing member object for JSON IDs {from_json_id} -> {to_json_id}")
+                    continue
 
-            all_relations = relations + reverse_relations
-            session.add_all(all_relations)
-            await session.flush()
+                try:
+                    relation_type_enum = RelationTypeEnum[type_str]
+                except KeyError:
+                    logger.warning(f"Invalid relation type '{type_str}' for {from_member_db.name} -> {to_member_db.name}. Skipping.")
+                    continue
 
-            logger.info(f"Added {len(all_relations)} relationships.")
-            logger.info("Database seeding completed successfully.")
+                # Check for duplicates before adding
+                rel_key = tuple(sorted((from_member_db.id, to_member_db.id))) + (relation_type_enum,)
+                # Handle potential self-referencing or specific logic if needed
+                # Ensure from/to are distinct if relation type requires it
 
-    # Dispose of the engine
-    await engine.dispose()
-    logger.info("Database connection closed.")
+                # Use actual DB IDs for the cache key
+                db_rel_key = (from_member_db.id, to_member_db.id, relation_type_enum)
+                if db_rel_key in relation_cache_db:
+                    # logger.info(f"Skipping duplicate relation: {from_member_db.name} -> {to_member_db.name} ({relation_type_enum.name})")
+                    continue
+
+                relation_db = Relation(
+                    from_member_id=from_member_db.id,
+                    to_member_id=to_member_db.id,
+                    relation_type=relation_type_enum
+                    # Add start_date/end_date if they were included in JSON
+                )
+                db.add(relation_db)
+                relation_cache_db.add(db_rel_key)
+                logger.info(f"    Added DB Relation: {from_member_db.name} -> {to_member_db.name} ({relation_type_enum.name})")
+
+            logger.info("Committing all changes...")
+            await db.commit()
+            logger.info("Database seeding from JSON completed successfully.")
+
+        except Exception as e:
+            logger.exception(f"An error occurred during seeding: {e}")
+            await db.rollback()
+        finally:
+            logger.info("DB Session closed.")
+
+async def clear_data(db: AsyncSession):
+    """Optional: Clears existing family members and relations."""
+    logger.warning("Clearing existing FamilyMember and Relation data...")
+    # Order matters due to foreign keys
+    await db.execute(text(f"DELETE FROM {Relation.__tablename__}"))
+    await db.execute(text(f"DELETE FROM {FamilyMember.__tablename__}"))
+    # Reset sequence for SQLite primary keys if needed (specific to DB)
+    # Removed deletion from sqlite_sequence as it might not exist and isn't strictly necessary for clearing data
+    # if db.bind.dialect.name == 'sqlite':
+    #      await db.execute(text("DELETE FROM sqlite_sequence WHERE name='family_members' OR name='relations';"))
+    await db.commit()
+    logger.info("Existing data cleared.")
+
+
+async def main():
+    # Optional: Clear data before seeding
+    async with AsyncSessionFactory() as db_clear:
+        await clear_data(db_clear)
+
+    # Run the main seeding process
+    await seed_database()
 
 if __name__ == "__main__":
-    # Ensure the script can find the 'app' module when run directly
-    # This might require setting PYTHONPATH=. or running as python -m scripts.seed_db
-    import sys
-    import os
-    # Add project root to path if necessary
-    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    if project_root not in sys.path:
-        sys.path.insert(0, project_root)
+    # Ensure tables exist (Alembic should handle this ideally)
+    # You might run alembic upgrade head separately before the seeder
+    # Or add a check here if needed
 
-    asyncio.run(seed_data())
+    asyncio.run(main())
+    # Dispose engine after script finishes
+    asyncio.run(async_engine.dispose())
+    logger.info("Engine disposed.")

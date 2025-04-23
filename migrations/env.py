@@ -81,20 +81,29 @@ async def run_migrations_online() -> None: # Make the function async
     # (Though offline usually reads from ini)
     config.set_main_option("sqlalchemy.url", db_url)
 
-    # Create engine directly using the URL from the environment variable
     # Create AsyncEngine directly using the URL from the environment variable
-    connectable = AsyncEngine(create_engine(db_url, poolclass=pool.NullPool))
+    from sqlalchemy.ext.asyncio import create_async_engine # Ensure create_async_engine is imported if not already
+    connectable = create_async_engine(db_url, poolclass=pool.NullPool)
 
-    # Use async context manager for connection
+    # Define a synchronous function to run the migrations
+    def run_migrations_fn(connection):
+        context.configure(connection=connection, target_metadata=target_metadata)
+        with context.begin_transaction():
+            context.run_migrations()
+
+    # Use async context manager for connection and run the sync function
     async with connectable.connect() as connection:
-        # Configure context with the connection
-        await connection.run_sync(do_run_migrations)
+        await connection.run_sync(run_migrations_fn)
 
-async def do_run_migrations(connection):
-    """Helper function to run migrations within the async context."""
-    context.configure(connection=connection, target_metadata=target_metadata)
-    with context.begin_transaction():
-        context.run_migrations()
+    # Dispose the engine after use
+    await connectable.dispose()
+
+# Remove the unused async do_run_migrations helper
+# async def do_run_migrations(connection):
+#     """Helper function to run migrations within the async context."""
+#     context.configure(connection=connection, target_metadata=target_metadata)
+#     with context.begin_transaction():
+#         context.run_migrations()
 
 
 if context.is_offline_mode():
