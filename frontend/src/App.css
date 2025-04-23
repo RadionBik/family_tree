@@ -103,9 +103,29 @@ body {
 }
 
 /* Form Styles */
-.admin-login form,
-.subscription-form form {
+.admin-login form { /* Keep admin login form styles separate */
   margin-top: 1rem;
+}
+
+/* Subscription Form Specific Styles */
+.subscription-form {
+  width: 90%; /* Use 90% of the container width */
+  max-width: 600px; /* But don't exceed 600px */
+  margin: 2rem auto; /* Center the form and add vertical margin */
+  padding: 2rem; /* Add internal padding */
+  background-color: #fff; /* White background */
+  border-radius: 8px; /* Rounded corners */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+  text-align: center; /* Center title and button */
+}
+
+.subscription-form h2 {
+  margin-bottom: 1.5rem; /* More space below title */
+  color: #333;
+}
+
+.subscription-form form {
+  margin-top: 0; /* Remove default top margin */
 }
 
 .form-group {
@@ -130,7 +150,7 @@ body {
   font-size: 1rem;
 }
 
-button[type="submit"] {
+button[type="submit"] { /* General button styles */
   display: inline-block;
   background-color: #007bff;
   color: white;
@@ -145,6 +165,14 @@ button[type="submit"] {
 button[type="submit"]:hover {
   background-color: #0056b3;
 }
+
+/* Center submit button specifically within subscription form */
+.subscription-form button[type="submit"] {
+  /* display: block; */ /* Make it block to center with margin */
+  /* margin: 1rem auto 0; */ /* Center the button */
+  /* Already centered due to text-align: center on .subscription-form */
+}
+
 
 /* Header Styling for Admin Login */
 .header {

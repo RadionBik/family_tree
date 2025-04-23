@@ -14,7 +14,7 @@ cytoscape.use(elk);
 qtip(cytoscape, $);
 
 
-const FamilyTreeGraph = ({ elements, onNodeClick }) => {
+const FamilyTreeGraph = ({ elements, onNodeClick, selectedNodeId }) => { // Add selectedNodeId prop
   const containerRef = useRef(null); // Ref for the container div
   const cyRef = useRef(null); // Ref to store the cy instance
 
@@ -86,6 +86,18 @@ const FamilyTreeGraph = ({ elements, onNodeClick }) => {
       style: {
         'border-width': 3,
         'border-color': '#DAA520' // Gold border for selected
+      }
+    },
+    {
+      selector: 'node.highlighted-node', // Style for the persistently highlighted node
+      style: {
+        'border-width': 5, // Thicker border
+        'border-color': '#ff0000', // Bright red border
+        'border-opacity': 0.8,
+        'shadow-blur': 10, // Add a subtle shadow/glow
+        'shadow-color': '#ff0000',
+        'shadow-opacity': 0.6,
+        'z-index': 999 // Ensure highlighted node is drawn on top
       }
     }
   ];
@@ -260,7 +272,26 @@ const FamilyTreeGraph = ({ elements, onNodeClick }) => {
   // This main effect depends on elements and the onNodeClick callback
   }, [elements, onNodeClick]);
 
-  // Remove the duplicate/separate tap listener effect entirely
+  // Effect to handle highlighting based on selectedNodeId
+  useEffect(() => {
+    const cy = cyRef.current;
+    if (!cy) return; // Cytoscape instance not ready
+
+    // Remove highlight from all nodes first
+    cy.nodes().removeClass('highlighted-node');
+
+    // Add highlight to the selected node if it exists
+    if (selectedNodeId) {
+      const selectedNode = cy.getElementById(String(selectedNodeId)); // Ensure ID is a string
+      if (selectedNode.length > 0) { // Check if node exists
+        selectedNode.addClass('highlighted-node');
+        console.log(`Highlighting node: ${selectedNodeId}`); // Optional: for debugging
+      } else {
+        console.log(`Node with ID ${selectedNodeId} not found for highlighting.`); // Optional: for debugging
+      }
+    }
+  }, [selectedNodeId, cyRef.current]); // Depend on selectedNodeId and the cy instance
+
 
   // Render the container div
   return (

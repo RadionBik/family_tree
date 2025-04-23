@@ -118,7 +118,11 @@ const FamilyTree = () => {
       {loading && <p>{t('loading')}...</p>}
       {error && <p className="error-message">{error}</p>}
       {!loading && !error && elements.length > 0 && (
-        <FamilyTreeGraph elements={elements} onNodeClick={handleNodeClick} /> // Pass handler
+        <FamilyTreeGraph
+          elements={elements}
+          onNodeClick={handleNodeClick}
+          selectedNodeId={selectedMember?.id} // Pass the selected node ID
+        />
       )}
       {!loading && !error && elements.length === 0 && (
           <p>{t('familyTree.noData')}</p> // Show message if no data after loading
