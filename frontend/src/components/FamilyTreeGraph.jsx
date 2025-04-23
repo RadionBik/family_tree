@@ -1,13 +1,22 @@
 import React, { useEffect, useRef } from 'react';
-import CytoscapeComponent from 'react-cytoscapejs';
-import cytoscape from 'cytoscape'; // Import cytoscape core
-import elk from 'cytoscape-elk'; // Import elk layout extension
-import ELK from 'elkjs/lib/elk.bundled.js'; // Import elkjs
+import CytoscapeComponent from 'react-cytoscapejs'; // Keep for normalizeElements
+import cytoscape from 'cytoscape';
+import elk from 'cytoscape-elk'; // Keep elk registered
+import ELK from 'elkjs/lib/elk.bundled.js';
+// import dagre from 'cytoscape-dagre'; // Remove dagre import
+import $ from 'jquery';
+import qtip from 'cytoscape-qtip';
+import 'qtip2/dist/jquery.qtip.min.css';
 
-cytoscape.use(elk); // Register the elk layout
+// Register extensions globally
+cytoscape.use(elk);
+// cytoscape.use(dagre); // Remove dagre registration
+qtip(cytoscape, $);
 
-const FamilyTreeGraph = ({ elements, onNodeClick }) => { // Add onNodeClick prop
-  const cyRef = useRef(null);
+
+const FamilyTreeGraph = ({ elements, onNodeClick }) => {
+  const containerRef = useRef(null); // Ref for the container div
+  const cyRef = useRef(null); // Ref to store the cy instance
 
   // Enhanced stylesheet
   const stylesheet = [
@@ -48,10 +57,10 @@ const FamilyTreeGraph = ({ elements, onNodeClick }) => { // Add onNodeClick prop
         'width': 2,
         'line-color': '#ccc', // Default color
         'curve-style': 'bezier', // Smoother curves
-        'label': 'data(label)', // Display the edge label
-        'font-size': '10px', // Smaller font for edge labels
-        'color': '#555', // Label color
-        'text-rotation': 'autorotate',
+        // 'label': 'data(label)', // Removed: Display the edge label
+        'font-size': '10px', // Smaller font for edge labels (kept for potential future use, but label removed)
+        'color': '#555', // Label color (kept for potential future use)
+        'text-rotation': 'autorotate', // Kept for potential future use
         'text-margin-y': -10, // Adjust label position relative to edge
       }
     },
@@ -81,70 +90,154 @@ const FamilyTreeGraph = ({ elements, onNodeClick }) => { // Add onNodeClick prop
     }
   ];
 
-  // Layout options using elk
+  // Layout options using elk (Restored detailed options)
   const layout = {
     name: 'elk',
-    fit: true,
+    fit: true, // Keep fit option
     padding: 50,
-    // ELK options: Use layered algorithm for hierarchy
+    // Restore detailed ELK options
     elk: {
       algorithm: 'layered',
       'elk.direction': 'DOWN', // Top to bottom
       'elk.layered.spacing.nodeNodeBetweenLayers': '80', // Vertical spacing
       'elk.spacing.nodeNode': '40', // Horizontal spacing within layer
-      // Attempt to influence node order within layers using is_descendant
-      // This tells ELK how to order nodes that are otherwise equivalent in the hierarchy.
-      // We want non-descendants (false) to come before descendants (true)
       'elk.layered.nodePlacement.favorStraightEdges': 'true',
       'elk.layered.compaction.postCompaction.strategy': 'EDGE_LENGTH',
       'elk.separateConnectedComponents': 'false',
-      // Use Network Simplex node placement strategy
       'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
-      // Set alignment for Network Simplex
       'elk.layered.nodePlacement.bk.fixedAlignment': 'BALANCED', // Options: LEFTUP, RIGHTDOWN, BALANCED, CENTER
-      // Removed semiInteractive crossing minimization
     },
   };
 
 
+  // Effect to initialize and manage the Cytoscape instance
   useEffect(() => {
-    const cy = cyRef.current;
-    if (!cy) {
-      return; // Cytoscape instance not ready yet
+    if (!containerRef.current) {
+      console.log("Container ref not ready");
+      return;
     }
 
-    console.log('Cytoscape instance available, attaching listeners:', cy);
+    console.log("Initializing Cytoscape directly...");
 
-    // Click/Tap listener for nodes
-    const handleNodeTap = (event) => {
-      const nodeData = event.target.data();
-      console.log('Node tapped:', nodeData);
-      if (onNodeClick) {
-        onNodeClick(nodeData); // Call the callback prop
-      }
+    // Destroy previous instance if it exists
+    if (cyRef.current) {
+        console.log("Destroying previous Cytoscape instance.");
+        // Destroy qtips before destroying the instance
+        cyRef.current.nodes().forEach(node => {
+            const qtipApi = node.scratch('_qtip'); // qtip stores API in scratchpad
+            if (qtipApi) {
+                qtipApi.destroy(true); // Destroy qtip instance immediately
+            }
+        });
+        cyRef.current.destroy();
+        cyRef.current = null;
+    }
+
+    const cy = cytoscape({
+      container: containerRef.current,
+      elements: CytoscapeComponent.normalizeElements(elements || []),
+      style: stylesheet,
+      layout: { name: 'preset' },
+      minZoom: 0.5,
+      maxZoom: 2,
+      // Remove explicit interaction settings to rely on defaults
+      // userPanningEnabled: true,
+      // userZoomingEnabled: true,
+      // boxSelectionEnabled: true,
+    });
+
+    cyRef.current = cy;
+
+    // Define the function to run layout and setup qTips
+    const runLayoutAndTooltips = () => {
+        console.log("Running ELK layout...");
+        const elkLayout = cy.layout(layout); // Use ELK layout config
+
+        // Use the 'stop' event of the layout to set up tooltips *and* unlock nodes
+        elkLayout.one('layoutstop', () => {
+            console.log("Layout stopped, setting up qTips and unlocking nodes...");
+
+            // Setup qTips first
+            cy.nodes().forEach((node) => {
+                const nodeData = node.data();
+                // console.log(`Processing node: ${nodeData.label} (ID: ${node.id()}), typeof node.qtip: ${typeof node.qtip}`); // Keep log removed
+
+                if (typeof node.qtip !== 'function') {
+                    console.error(`node.qtip is not a function for node ${node.id()}. Check registration.`);
+                    return;
+                }
+
+                let tooltipHTML = `<strong>${nodeData.label || 'N/A'}</strong>`;
+                if (nodeData.birth_date) tooltipHTML += `<br/>Born: ${nodeData.birth_date}`;
+                if (nodeData.death_date) tooltipHTML += `<br/>Died: ${nodeData.death_date}`;
+                if (nodeData.gender) tooltipHTML += `<br/>Gender: ${nodeData.gender}`;
+
+                node.qtip({
+                    content: tooltipHTML,
+                    position: { my: 'bottom center', at: 'top center', target: node },
+                    style: { classes: 'qtip-bootstrap', tip: { width: 16, height: 8 } },
+                    show: { event: 'mouseover' },
+                    hide: { event: 'mouseout' }
+                });
+            }); // End qTip setup loop
+
+            // Unlock nodes after setting up tooltips by iterating
+            console.log("Attempting to unlock nodes individually...");
+            cy.nodes().forEach(node => {
+                node.unlock();
+            });
+            console.log("Nodes unlock attempted after layout.");
+        }); // End layoutstop listener
+
+        elkLayout.run(); // Start the layout run
     };
 
+    // Run layout/tooltips after a short delay (keep delay for ELK)
+    const timeoutId = setTimeout(runLayoutAndTooltips, 50);
+
+    // Setup tap listener immediately
+    const handleNodeTap = (event) => {
+        const nodeData = event.target.data();
+        console.log('Node tapped:', nodeData);
+        if (onNodeClick) {
+            onNodeClick(nodeData);
+        }
+    };
     cy.on('tap', 'node', handleNodeTap);
 
-    // Cleanup listener on component unmount or when onNodeClick changes
+    // Cleanup function for the main effect
     return () => {
-      console.log('Cleaning up Cytoscape listeners');
-      cy.off('tap', 'node', handleNodeTap);
-      // cy.destroy(); // Optional: destroy instance on unmount
+      console.log("Cleaning up Cytoscape instance and listeners...");
+      clearTimeout(timeoutId); // Clear the timeout for ELK delay
+      if (cyRef.current) {
+        // Destroy qtips
+        cyRef.current.nodes().forEach(node => {
+            const qtipApi = node.scratch('_qtip');
+            if (qtipApi) {
+                qtipApi.destroy(true);
+            }
+        });
+        // Unbind tap listener
+        cyRef.current.off('tap', 'node', handleNodeTap);
+        // Destroy instance
+        cyRef.current.destroy();
+        cyRef.current = null;
+      }
     };
-  }, [onNodeClick]); // Add onNodeClick to dependency array
+  // This main effect depends on elements and the onNodeClick callback
+  }, [elements, onNodeClick]);
 
+  // Remove the duplicate/separate tap listener effect entirely
+
+  // Render the container div
   return (
-    <CytoscapeComponent
-      elements={CytoscapeComponent.normalizeElements(elements || [])} // Use provided elements or empty array
+    <div
+      ref={containerRef}
       style={{ width: '100%', height: '600px', border: '1px solid #ddd' }}
-      layout={layout}
-      stylesheet={stylesheet}
-      cy={(cy) => { cyRef.current = cy; }} // Assign the cy instance to the ref
-      minZoom={0.5}
-      maxZoom={2}
     />
   );
 };
+
+// Removed import from here as it's moved to the top
 
 export default FamilyTreeGraph;

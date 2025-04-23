@@ -6,9 +6,10 @@ import familyTreeService from '../services/familyTreeService'; // Import the ser
 
 // Helper function to transform API data to Cytoscape format
 const transformDataForCytoscape = (members) => {
+  // console.log("[transformData] Input members:", members); // Remove log
   const elements = [];
-  const edgeIds = new Set(); // To avoid duplicate edges
-  const memberMap = new Map(members.map(m => [String(m.id), m])); // Re-add memberMap
+  const edgeIds = new Set();
+  const memberMap = new Map(members.map(m => [String(m.id), m]));
 
   // 1. Create node elements
   members.forEach(member => {
@@ -52,6 +53,13 @@ const transformDataForCytoscape = (members) => {
 
   // Removed edge sorting logic
 
+  // console.log("[transformData] Output elements:", elements); // Remove log
+  // Remove specific checks
+  // const peterNode = elements.find(el => el.data.label === 'Peter Doe');
+  // const johnNode = elements.find(el => el.data.label === 'John Doe');
+  // console.log(`[transformData] Peter Doe node found in output: ${!!peterNode}`);
+  // console.log(`[transformData] John Doe node found in output: ${!!johnNode}`);
+
   return elements;
 };
 
@@ -79,8 +87,14 @@ const FamilyTree = () => {
         const familyData = await familyTreeService.getFamilyTreeData(); // Fetch data
         console.log("Fetched family data:", familyData); // Log fetched data
         if (Array.isArray(familyData)) {
+            // Remove specific checks
+            // const peterFetched = familyData.find(m => m.name === 'Peter Doe');
+            // const johnFetched = familyData.find(m => m.name === 'John Doe');
+            // console.log(`[fetchData] Peter Doe found in fetched data: ${!!peterFetched}`);
+            // console.log(`[fetchData] John Doe found in fetched data: ${!!johnFetched}`);
+
             const transformedElements = transformDataForCytoscape(familyData);
-            console.log("Transformed elements:", transformedElements); // Log transformed data
+            // console.log("Transformed elements:", transformedElements);
             setElements(transformedElements);
         } else {
             console.error("Fetched data is not an array:", familyData);
@@ -111,7 +125,7 @@ const FamilyTree = () => {
       )}
 
       {/* Render Legend if graph is displayed */}
-      {/* {!loading && !error && elements.length > 0 && <GraphLegend />} */} {/* Removed Legend */}
+      {!loading && !error && elements.length > 0 && <GraphLegend />} {/* Render Legend */}
 
       {/* Display selected member details */}
       {selectedMember && (

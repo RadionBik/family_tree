@@ -11,22 +11,23 @@
     "turnsAge": "Исполняется {{age}}"
   },
   "familyTree": {
-    "title": "Граф семейного древа",
+    "title": "Наша семья",
     "placeholder": "[Визуализация семейного древа будет здесь]",
     "requiresIntegration": "(Требуется интеграция библиотеки)",
-    "detailsTitle": "Детали"
+    "detailsTitle": "Детали",
+    "edgeLegendTitle": "Типы связей"
   },
   "adminLogin": {
     "title": "Вход для администратора",
-    "usernameLabel": "Имя пользователя:",
+    "usernameLabel": "Логин админа:",
     "passwordLabel": "Пароль:",
     "loginButton": "Войти",
     "alertNotImplemented": "Логика входа администратора еще не реализована."
   },
   "subscriptionForm": {
-    "title": "Подписка на уведомления",
+    "title": "Хочешь получать уведомления о днях рождения на почту?",
     "nameLabel": "Имя:",
-    "emailLabel": "Email:",
+    "emailLabel": "Твой электронный ящик:",
     "subscribeButton": "Подписаться",
     "alertNotImplemented": "Логика подписки еще не реализована."
   },
@@ -41,5 +42,9 @@
   },
   "notes": "Заметки",
   "close": "Закрыть",
-  "loading": "Загрузка"
+  "loading": "Загрузка",
+  "relationType": {
+    "parent-child": "Родитель-Ребенок",
+    "spouse": "Супруг(а)"
+  }
 }

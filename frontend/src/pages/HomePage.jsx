@@ -2,7 +2,7 @@ import React from 'react';
 import Layout from '../components/Layout';
 import BirthdayTimeline from '../components/BirthdayTimeline';
 import FamilyTree from '../components/FamilyTree';
-import AdminLogin from '../components/AdminLogin';
+// import AdminLogin from '../components/AdminLogin'; // Removed import
 import SubscriptionForm from '../components/SubscriptionForm';
 
 // Placeholder components for sections - will be created later
@@ -13,7 +13,7 @@ const HomePage = () => {
       <div className="home-page-grid">
         <BirthdayTimeline />
         <FamilyTree />
-        <AdminLogin />
+        {/* <AdminLogin /> Removed rendering */}
         <SubscriptionForm />
       </div>
     </Layout>

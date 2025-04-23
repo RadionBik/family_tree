@@ -145,3 +145,87 @@ button[type="submit"] {
 button[type="submit"]:hover {
   background-color: #0056b3;
 }
+
+/* Header Styling for Admin Login */
+.header {
+  display: flex; /* Use flexbox for layout */
+  justify-content: space-between; /* Pushes title left and login right */
+  align-items: center; /* Vertically aligns items in the middle */
+  padding: 1rem 2rem; /* Adjust padding as needed */
+  position: relative; /* Needed if login dropdowns are used later */
+}
+
+.header h1 {
+  margin: 0; /* Remove default margin */
+}
+
+.header-admin-login {
+  /* This container now holds the AdminLogin component */
+  /* No specific styles needed here if space-between works */
+}
+
+/* Optional: Adjust AdminLogin styles for header context */
+.header-admin-login .admin-login {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: white;
+  display: flex; /* Arrange form elements inline */
+  align-items: center;
+  gap: 0.5rem; /* Space between elements */
+}
+
+.header-admin-login .admin-login h2 {
+ display: none; /* Hide the title in the header view */
+}
+
+.header-admin-login .admin-login form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.header-admin-login .admin-login .form-group {
+  margin-bottom: 0; /* Remove bottom margin */
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.header-admin-login .admin-login label {
+  margin-bottom: 0; /* Remove bottom margin */
+  font-size: 0.9rem;
+  white-space: nowrap; /* Prevent wrapping */
+}
+
+.header-admin-login .admin-login input {
+  width: 120px; /* Adjust width */
+  padding: 0.3rem;
+  font-size: 0.9rem;
+}
+
+.header-admin-login .admin-login button {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+  margin-top: 0; /* Remove top margin */
+  white-space: nowrap;
+}
+
+/* Graph Tooltip Styling */
+.graph-tooltip {
+  background-color: rgba(0, 0, 0, 0.75); /* Semi-transparent black background */
+  color: white; /* White text */
+  padding: 8px 12px; /* Padding around the text */
+  border-radius: 4px; /* Rounded corners */
+  font-size: 12px; /* Font size */
+  pointer-events: none; /* Prevent tooltip from interfering with mouse events on the graph */
+  white-space: nowrap; /* Keep content on one line unless using <br/> */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Subtle shadow */
+  transition: opacity 0.2s ease-in-out; /* Smooth fade (optional) */
+}
+
+.graph-tooltip strong {
+  font-weight: bold;
+  display: block; /* Make title take its own line */
+  margin-bottom: 4px; /* Space below title */
+}
