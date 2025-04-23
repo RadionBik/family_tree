@@ -167,7 +167,9 @@ const FamilyTreeGraph = ({ elements, onNodeClick }) => {
                     return;
                 }
 
-                let tooltipHTML = `<strong>${nodeData.label || 'N/A'}</strong>`;
+                // Ensure tooltip shows something, even if just ID
+                let tooltipLabel = nodeData.label || `ID: ${node.id()}`;
+                let tooltipHTML = `<strong>${tooltipLabel}</strong>`;
                 if (nodeData.birth_date) tooltipHTML += `<br/>Born: ${nodeData.birth_date}`;
                 if (nodeData.death_date) tooltipHTML += `<br/>Died: ${nodeData.death_date}`;
                 if (nodeData.gender) tooltipHTML += `<br/>Gender: ${nodeData.gender}`;
@@ -176,8 +178,15 @@ const FamilyTreeGraph = ({ elements, onNodeClick }) => {
                     content: tooltipHTML,
                     position: { my: 'bottom center', at: 'top center', target: node },
                     style: { classes: 'qtip-bootstrap', tip: { width: 16, height: 8 } },
-                    show: { event: 'mouseover' },
-                    hide: { event: 'mouseout' }
+                    show: {
+                        event: 'mouseover',
+                        solo: true, // Hide other tooltips when this one shows
+                    },
+                    hide: {
+                        event: 'mouseout unfocus', // Hide on mouseout or when focus is lost
+                        fixed: true, // Allows hovering over the tooltip itself without hiding
+                        delay: 100 // Small delay before hiding
+                    }
                 });
             }); // End qTip setup loop
 
@@ -197,13 +206,37 @@ const FamilyTreeGraph = ({ elements, onNodeClick }) => {
 
     // Setup tap listener immediately
     const handleNodeTap = (event) => {
-        const nodeData = event.target.data();
+        const tappedNode = event.target;
+        const nodeData = tappedNode.data();
         console.log('Node tapped:', nodeData);
+
+        // Hide all existing qTips immediately on tap
+        cy.nodes().forEach(n => {
+            const qtipApi = n.scratch('_qtip');
+            if (qtipApi) {
+                qtipApi.hide();
+            }
+        });
+
+        // Add a brief visual flash on tap
+        tappedNode.addClass('tapped-node');
+        setTimeout(() => {
+            tappedNode.removeClass('tapped-node');
+        }, 300); // Remove class after 300ms
+
         if (onNodeClick) {
             onNodeClick(nodeData);
         }
     };
     cy.on('tap', 'node', handleNodeTap);
+
+    // Add a style for the tapped node flash
+    cy.style().selector('.tapped-node').style({
+        'background-color': '#ffcc00', // Bright yellow flash
+        'transition-duration': '0.1s',
+        'transition-property': 'background-color'
+    }).update();
+
 
     // Cleanup function for the main effect
     return () => {
