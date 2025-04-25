@@ -31,7 +31,12 @@
     "nameLabel": "Ваше имя:",
     "emailLabel": "Электронный ящик:",
     "subscribeButton": "Подписаться",
-    "alertNotImplemented": "Логика подписки еще не реализована."
+    "subscribingButton": "Подписка...",
+    "alertNotImplemented": "Логика подписки еще не реализована.",
+    "successDefault": "Подписка оформлена успешно!",
+    "errorGeneric": "Произошла ошибка. Пожалуйста, попробуйте позже.",
+    "errorDuplicate": "Этот email уже подписан.",
+    "errorNetwork": "Ошибка сети. Проверьте подключение и попробуйте снова."
   },
   "name": "Имя",
   "birthDate": "Дата рождения",
