@@ -198,6 +198,7 @@ button[type="submit"]:hover {
   border: 1px solid #ccc;
   border-radius: 4px;
   background-color: white;
+  color: #333; /* Ensure text inside is dark on white background */
   display: flex; /* Arrange form elements inline */
   align-items: center;
   gap: 0.5rem; /* Space between elements */

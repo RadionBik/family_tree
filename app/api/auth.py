@@ -132,7 +132,8 @@ async def login_for_access_token(
         # Use the localized message from the specific exception
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e), # Exception already contains localized message
+            # Return a generic message for all auth failures to prevent username enumeration
+            detail=get_text("auth_invalid_credentials"),
             headers={"WWW-Authenticate": "Bearer"},
         )
     except Exception as e:
