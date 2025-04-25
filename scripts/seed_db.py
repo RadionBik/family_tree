@@ -14,8 +14,9 @@ sys.path.insert(0, project_root)
 from app.utils.database import Base, AsyncSessionFactory, async_engine # Use factory now
 from app.models.family_member import FamilyMember, GenderEnum
 from app.models.relation import Relation, RelationTypeEnum
+from app.models.admin_user import AdminUser # Import AdminUser model
 from sqlalchemy.ext.asyncio import AsyncSession # Import AsyncSession
-from sqlalchemy import text # Import text for raw SQL if needed in clear_data
+from sqlalchemy import text, select # Import text and select
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -156,16 +157,60 @@ async def seed_database():
         finally:
             logger.info("DB Session closed.")
 
+
+async def seed_admin_user(db: AsyncSession):
+    """Seeds an initial admin user if one doesn't exist."""
+    admin_username = os.getenv("INITIAL_ADMIN_USERNAME", "admin")
+    admin_email = os.getenv("INITIAL_ADMIN_EMAIL", "admin@example.com")
+    admin_password = os.getenv("INITIAL_ADMIN_PASSWORD", "password") # Use a strong default or require env var
+
+    if not admin_password:
+        logger.error("INITIAL_ADMIN_PASSWORD environment variable not set. Cannot seed admin user.")
+        return
+
+    logger.info(f"Checking for existing admin user '{admin_username}' or email '{admin_email}'...")
+
+    # Check if admin user already exists
+    stmt = select(AdminUser).where(
+        (AdminUser.username == admin_username) | (AdminUser.email == admin_email)
+    )
+    result = await db.execute(stmt)
+    existing_admin = result.scalar_one_or_none()
+
+    if existing_admin:
+        logger.info(f"Admin user '{existing_admin.username}' already exists. Skipping admin seeding.")
+        return
+
+    logger.info(f"Creating initial admin user: {admin_username} ({admin_email})")
+    try:
+        new_admin = AdminUser(
+            username=admin_username,
+            email=admin_email,
+            # The password setter in the model handles hashing
+            password=admin_password,
+            role="admin", # Default role
+            is_active=True
+        )
+        db.add(new_admin)
+        await db.commit() # Commit admin user separately or within the main seeding transaction
+        await db.refresh(new_admin)
+        logger.info(f"Successfully created initial admin user with ID: {new_admin.id}")
+    except Exception as e:
+        logger.exception(f"Failed to create initial admin user: {e}")
+        await db.rollback()
+
+
 async def clear_data(db: AsyncSession):
-    """Optional: Clears existing family members and relations."""
-    logger.warning("Clearing existing FamilyMember and Relation data...")
+    """Optional: Clears existing data."""
+    logger.warning("Clearing existing FamilyMember, Relation, and AdminUser data...")
     # Order matters due to foreign keys
     await db.execute(text(f"DELETE FROM {Relation.__tablename__}"))
     await db.execute(text(f"DELETE FROM {FamilyMember.__tablename__}"))
+    await db.execute(text(f"DELETE FROM {AdminUser.__tablename__}")) # Clear admin users too
     # Reset sequence for SQLite primary keys if needed (specific to DB)
     # Removed deletion from sqlite_sequence as it might not exist and isn't strictly necessary for clearing data
     # if db.bind.dialect.name == 'sqlite':
-    #      await db.execute(text("DELETE FROM sqlite_sequence WHERE name='family_members' OR name='relations';"))
+    #      await db.execute(text("DELETE FROM sqlite_sequence WHERE name='family_members' OR name='relations' OR name='admin_users';"))
     await db.commit()
     logger.info("Existing data cleared.")
 
@@ -175,8 +220,13 @@ async def main():
     async with AsyncSessionFactory() as db_clear:
         await clear_data(db_clear)
 
-    # Run the main seeding process
+    # Run the main seeding process for family data
     await seed_database()
+
+    # Seed the initial admin user
+    async with AsyncSessionFactory() as db_admin:
+        await seed_admin_user(db_admin)
+
 
 if __name__ == "__main__":
     # Ensure tables exist (Alembic should handle this ideally)

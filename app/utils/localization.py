@@ -33,6 +33,15 @@ translations = {
     "confirmation_email_sent": "Письмо с подтверждением отправлено на ваш email.",
     "error_sending_email": "Ошибка при отправке email.",
 
+    # Authentication
+    "auth_user_not_found": "Пользователь с таким именем не найден.",
+    "auth_user_inactive": "Учетная запись пользователя неактивна.",
+    "auth_invalid_credentials": "Неверное имя пользователя или пароль.",
+    "auth_successful": "Аутентификация прошла успешно.",
+    "auth_token_invalid": "Недействительный или просроченный токен.",
+    "auth_unauthorized": "Требуется аутентификация.",
+    "auth_forbidden": "Доступ запрещен.",
+
     # Add more translations as needed...
 }
 

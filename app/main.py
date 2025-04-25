@@ -14,6 +14,7 @@ from . import models # Import models package to ensure Base metadata is populate
 from .api import family as family_router # Import the family API router
 from .api import birthdays as birthdays_router # Import the birthdays API router
 from .api import subscriptions as subscriptions_router # Import the subscriptions API router
+from .api import auth as auth_router # Import the new auth API router
 
 # Basic logging setup (adapted for standard Python logging)
 log_dir = 'logs'
@@ -130,9 +131,10 @@ async def generic_exception_handler(request: Request, exc: Exception):
 
 # --- API Routers ---
 # Include routers from the api module
-app.include_router(family_router.router, prefix="/api", tags=["Family"]) # Remove /v1
-app.include_router(birthdays_router.router, prefix="/api", tags=["Birthdays"]) # Remove /v1
-app.include_router(subscriptions_router.router, prefix="/api", tags=["Subscriptions"]) # Remove /v1
+app.include_router(family_router.router, prefix="/api", tags=["Family"])
+app.include_router(birthdays_router.router, prefix="/api", tags=["Birthdays"])
+app.include_router(subscriptions_router.router, prefix="/api", tags=["Subscriptions"])
+app.include_router(auth_router.router, prefix="/api", tags=["Authentication"]) # Add the auth router
 # Add other routers here later
 logger.info("API routers included.")
 # -----------------

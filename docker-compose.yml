@@ -16,6 +16,10 @@ services:
       - APP_ENV=development # Use APP_ENV for FastAPI config
       # Override database URI to use the mounted volume with async prefix
       - DATABASE_URL=sqlite+aiosqlite:////app/data/app.db
+      # Initial Admin User Credentials (Change for production!)
+      - INITIAL_ADMIN_USERNAME=admin
+      - INITIAL_ADMIN_EMAIL=admin@example.com
+      - INITIAL_ADMIN_PASSWORD=changeme # <-- IMPORTANT: Change this!
       # You can add other environment variables here or load from an .env file
       # env_file:
       #   - .env
