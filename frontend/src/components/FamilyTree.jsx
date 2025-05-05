@@ -83,37 +83,58 @@ const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
   };
 
   useEffect(() => {
+    let isMounted = true; // Flag to track mount status
+
     // console.log("--- FamilyTree useEffect Running ---"); // Remove log
     const fetchData = async () => {
-      try {
+      // Start loading only if mounted
+      if (isMounted) {
         setLoading(true);
         setError(null);
+      }
+      try {
         const familyData = await familyTreeService.getFamilyTreeData(); // Fetch data
         console.log("Fetched family data:", familyData); // Log fetched data
-        if (Array.isArray(familyData)) {
-            // Remove specific checks
-            // const peterFetched = familyData.find(m => m.name === 'Peter Doe');
-            // const johnFetched = familyData.find(m => m.name === 'John Doe');
-            // console.log(`[fetchData] Peter Doe found in fetched data: ${!!peterFetched}`);
-            // console.log(`[fetchData] John Doe found in fetched data: ${!!johnFetched}`);
 
-            const transformedElements = transformDataForCytoscape(familyData);
-            // console.log("Transformed elements:", transformedElements);
-            setElements(transformedElements);
-        } else {
-            console.error("Fetched data is not an array:", familyData);
-            setError(t('familyTree.errorInvalidData'));
-            setElements([]); // Ensure elements is an empty array on error
+        // Process data only if mounted
+        if (isMounted) {
+          if (Array.isArray(familyData)) {
+              // Remove specific checks
+              // const peterFetched = familyData.find(m => m.name === 'Peter Doe');
+              // const johnFetched = familyData.find(m => m.name === 'John Doe');
+              // console.log(`[fetchData] Peter Doe found in fetched data: ${!!peterFetched}`);
+              // console.log(`[fetchData] John Doe found in fetched data: ${!!johnFetched}`);
+
+              const transformedElements = transformDataForCytoscape(familyData);
+              // console.log("Transformed elements:", transformedElements);
+              setElements(transformedElements);
+          } else {
+              console.error("Fetched data is not an array:", familyData);
+              setError(t('familyTree.errorInvalidData'));
+              setElements([]); // Ensure elements is an empty array on error
+          }
         }
       } catch (err) {
         console.error("Error fetching or transforming family tree data:", err);
-        setError(t('familyTree.errorLoading'));
-        setElements([]); // Ensure elements is an empty array on error
+        // Set error only if mounted
+        if (isMounted) {
+          setError(t('familyTree.errorLoading'));
+          setElements([]); // Ensure elements is an empty array on error
+        }
       } finally {
-        setLoading(false);
+        // Stop loading only if mounted
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
     fetchData();
+
+    // Cleanup function
+    return () => {
+      isMounted = false; // Set flag to false when component unmounts
+      // console.log("--- FamilyTree Component Unmounting ---"); // Optional: log unmount
+    };
   }, [t]); // Add t to dependencies as it's used in error messages
 
   return (

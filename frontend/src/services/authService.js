@@ -18,8 +18,7 @@ const login = async (username, password) => {
     // Assuming the response contains { access_token: "...", token_type: "bearer" }
     if (response.data.access_token) {
       console.log("Login successful, token received.");
-      // Store the token (e.g., in localStorage)
-      localStorage.setItem('adminToken', response.data.access_token);
+      // Token storage is handled by the component calling login
       // Optionally store user info if returned, or fetch it via /me
     }
     return response.data; // Return the token data

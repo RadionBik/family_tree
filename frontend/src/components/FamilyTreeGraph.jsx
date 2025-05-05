@@ -17,6 +17,7 @@ qtip(cytoscape, $);
 const FamilyTreeGraph = ({ elements, onNodeClick, selectedNodeId }) => { // Add selectedNodeId prop
   const containerRef = useRef(null); // Ref for the container div
   const cyRef = useRef(null); // Ref to store the cy instance
+  const isMounted = useRef(true); // Ref to track mount status
 
   // Enhanced stylesheet
   const stylesheet = [
@@ -162,48 +163,42 @@ const FamilyTreeGraph = ({ elements, onNodeClick, selectedNodeId }) => { // Add 
 
     // Define the function to run layout and setup qTips
     const runLayoutAndTooltips = () => {
+        console.log("Setting up qTips...");
+        // Setup qTips immediately
+        cy.nodes().forEach((node) => {
+            const nodeData = node.data();
+            if (typeof node.qtip !== 'function') {
+                console.error(`node.qtip is not a function for node ${node.id()}. Check registration.`);
+                return;
+            }
+            let tooltipLabel = nodeData.label || `ID: ${node.id()}`;
+            let tooltipHTML = `<strong>${tooltipLabel}</strong>`;
+            if (nodeData.birth_date) tooltipHTML += `<br/>Born: ${nodeData.birth_date}`;
+            if (nodeData.death_date) tooltipHTML += `<br/>Died: ${nodeData.death_date}`;
+            if (nodeData.gender) tooltipHTML += `<br/>Gender: ${nodeData.gender}`;
+
+            node.qtip({
+                content: tooltipHTML,
+                position: { my: 'bottom center', at: 'top center', target: node },
+                style: { classes: 'qtip-bootstrap', tip: { width: 16, height: 8 } },
+                show: { event: 'mouseover', solo: true },
+                hide: { event: 'mouseout unfocus', fixed: true, delay: 100 }
+            });
+        }); // End qTip setup loop
+        console.log("qTips setup complete.");
+
         console.log("Running ELK layout...");
         const elkLayout = cy.layout(layout); // Use ELK layout config
 
-        // Use the 'stop' event of the layout to set up tooltips *and* unlock nodes
+        // Use the 'stop' event of the layout ONLY to unlock nodes
         elkLayout.one('layoutstop', () => {
-            console.log("Layout stopped, setting up qTips and unlocking nodes...");
-
-            // Setup qTips first
-            cy.nodes().forEach((node) => {
-                const nodeData = node.data();
-                // console.log(`Processing node: ${nodeData.label} (ID: ${node.id()}), typeof node.qtip: ${typeof node.qtip}`); // Keep log removed
-
-                if (typeof node.qtip !== 'function') {
-                    console.error(`node.qtip is not a function for node ${node.id()}. Check registration.`);
-                    return;
-                }
-
-                // Ensure tooltip shows something, even if just ID
-                let tooltipLabel = nodeData.label || `ID: ${node.id()}`;
-                let tooltipHTML = `<strong>${tooltipLabel}</strong>`;
-                if (nodeData.birth_date) tooltipHTML += `<br/>Born: ${nodeData.birth_date}`;
-                if (nodeData.death_date) tooltipHTML += `<br/>Died: ${nodeData.death_date}`;
-                if (nodeData.gender) tooltipHTML += `<br/>Gender: ${nodeData.gender}`;
-
-                node.qtip({
-                    content: tooltipHTML,
-                    position: { my: 'bottom center', at: 'top center', target: node },
-                    style: { classes: 'qtip-bootstrap', tip: { width: 16, height: 8 } },
-                    show: {
-                        event: 'mouseover',
-                        solo: true, // Hide other tooltips when this one shows
-                    },
-                    hide: {
-                        event: 'mouseout unfocus', // Hide on mouseout or when focus is lost
-                        fixed: true, // Allows hovering over the tooltip itself without hiding
-                        delay: 100 // Small delay before hiding
-                    }
-                });
-            }); // End qTip setup loop
-
-            // Unlock nodes after setting up tooltips by iterating
-            console.log("Attempting to unlock nodes individually...");
+            // Check if component is still mounted before proceeding
+            if (!isMounted.current) {
+                console.log("Layout stopped, but component unmounted. Skipping unlock.");
+                return;
+            }
+            console.log("Layout stopped, unlocking nodes...");
+            // Unlock nodes after layout completes
             cy.nodes().forEach(node => {
                 node.unlock();
             });
@@ -253,20 +248,22 @@ const FamilyTreeGraph = ({ elements, onNodeClick, selectedNodeId }) => { // Add 
     // Cleanup function for the main effect
     return () => {
       console.log("Cleaning up Cytoscape instance and listeners...");
+      isMounted.current = false; // Set mounted status to false on cleanup
       clearTimeout(timeoutId); // Clear the timeout for ELK delay
       if (cyRef.current) {
-        // Destroy qtips
+        // Unbind tap listener first
+        cyRef.current.off('tap', 'node', handleNodeTap);
+        // Then destroy qtips
         cyRef.current.nodes().forEach(node => {
             const qtipApi = node.scratch('_qtip');
             if (qtipApi) {
-                qtipApi.destroy(true);
+                qtipApi.destroy(true); // Destroy immediately
             }
         });
-        // Unbind tap listener
-        cyRef.current.off('tap', 'node', handleNodeTap);
-        // Destroy instance
+        // Finally, destroy the Cytoscape instance
         cyRef.current.destroy();
-        cyRef.current = null;
+        cyRef.current = null; // Ensure ref is cleared
+        console.log("Cytoscape instance destroyed.");
       }
     };
   // This main effect depends on elements and the onNodeClick callback
