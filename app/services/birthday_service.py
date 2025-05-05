@@ -4,8 +4,8 @@ from datetime import date, timedelta
 from sqlalchemy import select, extract, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import FamilyMember
-from app.schemas.birthday import UpcomingBirthdayRead
+from app.models import FamilyMember, SubscribedEmail
+from app.schemas.birthday import UpcomingBirthdayRead, BirthdayNotificationInfo
 
 logger = logging.getLogger(__name__)
 
@@ -80,4 +80,60 @@ async def get_upcoming_birthdays(db: AsyncSession, days: int = 90) -> List[Upcom
 
     except Exception as e:
         logger.exception("Error fetching upcoming birthdays.", exc_info=True)
+        raise e
+
+
+async def get_todays_birthdays_for_notification(db: AsyncSession) -> List[BirthdayNotificationInfo]:
+    """
+    Fetches living family members whose birthday is today and the list of active subscribers.
+
+    Args:
+        db: The asynchronous database session.
+
+    Returns:
+        A list of BirthdayNotificationInfo objects for members celebrating a birthday today.
+        Returns an empty list if no birthdays are found or no subscribers exist.
+    """
+    logger.info("Fetching today's birthdays for notification.")
+    today = date.today()
+
+    try:
+        # 1. Get active subscriber emails
+        sub_stmt = select(SubscribedEmail.email).where(SubscribedEmail.is_active == True)
+        sub_result = await db.execute(sub_stmt)
+        subscriber_emails = sub_result.scalars().all()
+
+        if not subscriber_emails:
+            logger.info("No active subscribers found. No notifications will be sent.")
+            return []
+
+        # 2. Get living members whose birthday is today
+        bday_stmt = select(FamilyMember).where(
+            FamilyMember.birth_date.isnot(None),
+            FamilyMember.death_date.is_(None), # Only living members
+            extract('month', FamilyMember.birth_date) == today.month,
+            extract('day', FamilyMember.birth_date) == today.day
+        )
+        bday_result = await db.execute(bday_stmt)
+        members_with_birthday_today = bday_result.scalars().all()
+
+        if not members_with_birthday_today:
+            logger.info("No birthdays found for today.")
+            return []
+
+        notifications = []
+        for member in members_with_birthday_today:
+            # Calculate age they are turning today
+            age = calculate_age(member.birth_date, today)
+            notifications.append(BirthdayNotificationInfo(
+                name=member.name,
+                age=age,
+                subscriber_emails=list(subscriber_emails) # Convert Sequence to list
+            ))
+
+        logger.info(f"Found {len(notifications)} birthday(s) today. Subscribers: {len(subscriber_emails)}.")
+        return notifications
+
+    except Exception as e:
+        logger.exception("Error fetching today's birthdays for notification.", exc_info=True)
         raise e

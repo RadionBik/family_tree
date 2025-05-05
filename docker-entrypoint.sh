@@ -7,6 +7,12 @@ set -e
 # echo "Running database migrations..."
 # flask db upgrade
 
+# Start the cron service in the background
+echo "Starting cron service..."
+cron &
+echo "Cron service started."
+
 # Execute the command passed as arguments to the script
 # (e.g., the CMD from Dockerfile)
+echo "Executing command: $@"
 exec "$@"

@@ -10,9 +10,12 @@ ENV PYTHONUNBUFFERED=1
 # Set the working directory in the container
 WORKDIR /app
 
-# Install system dependencies if needed (e.g., for certain Python packages)
-# RUN apt-get update && apt-get install -y --no-install-recommends some-package && \
-#     rm -rf /var/lib/apt/lists/*
+# Install system dependencies
+# Install cron and ensure log directory exists
+RUN apt-get update && apt-get install -y --no-install-recommends cron procps && \
+    rm -rf /var/lib/apt/lists/* && \
+    mkdir -p /app/logs && \
+    touch /app/logs/cron.log # Create log file, owned by root
 
 # Install Python dependencies
 # Copy only requirements first to leverage Docker cache
@@ -22,6 +25,11 @@ RUN pip install -r requirements.txt
 
 # Copy the rest of the application code into the container
 COPY . .
+
+# Add crontab file and set permissions
+COPY scripts/birthday-cron /etc/cron.d/birthday-cron
+RUN chmod 0644 /etc/cron.d/birthday-cron && \
+    crontab /etc/cron.d/birthday-cron # Apply the crontab
 
 # Expose the port Uvicorn runs on
 EXPOSE 8000

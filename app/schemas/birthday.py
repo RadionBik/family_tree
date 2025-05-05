@@ -11,3 +11,12 @@ class UpcomingBirthdayRead(BaseModel):
     upcoming_age: int # The age the person will turn on their next birthday
 
     model_config = ConfigDict(from_attributes=True) # Enable ORM mode if needed later, though this is usually constructed
+
+
+class BirthdayNotificationInfo(BaseModel):
+    """Schema for data needed for a birthday notification."""
+    name: str
+    age: int
+    subscriber_emails: list[str]
+
+    model_config = ConfigDict(from_attributes=True)
