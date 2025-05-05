@@ -48,18 +48,18 @@ function App() {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<HomePage />} />
-        <Route path="/admin/login" element={<LoginRedirector /* onLoginSuccess={handleAdminLoginSuccess} */ />} />
+        {/* <Route path="/admin/login" element={<LoginRedirector /* onLoginSuccess={handleAdminLoginSuccess} * / />} /> */}
 
         {/* Admin Routes (Protected by AdminLayout) */}
-        <Route path="/admin" element={<AdminLayout /* onLogout={handleAdminLogout} */ />}>
+        {/* <Route path="/admin" element={<AdminLayout /* onLogout={handleAdminLogout} * / />}> */}
           {/* Index route for /admin */}
-          <Route index element={<AdminDashboard />} />
+          {/* <Route index element={<AdminDashboard />} /> */}
           {/* Member Management Routes */}
-          <Route path="members" element={<AdminMemberListPage />} />
-          <Route path="members/add" element={<AdminMemberFormPage />} />
-          <Route path="members/edit/:id" element={<AdminMemberFormPage />} />
+          {/* <Route path="members" element={<AdminMemberListPage />} /> */}
+          {/* <Route path="members/add" element={<AdminMemberFormPage />} /> */}
+          {/* <Route path="members/edit/:id" element={<AdminMemberFormPage />} /> */}
           {/* Add other admin routes here (e.g., relationships, settings) */}
-        </Route>
+        {/* </Route> */}
 
         {/* Optional: Add a 404 Not Found route */}
         {/* <Route path="*" element={<NotFoundPage />} /> */}
