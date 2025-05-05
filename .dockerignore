@@ -38,3 +38,7 @@ htmlcov/
 # Environment files (should be passed via docker-compose, not copied)
 .env
 *.env
+
+# Frontend build artifacts / dependencies
+frontend/node_modules/
+frontend/dist/
