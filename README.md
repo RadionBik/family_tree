@@ -1,3 +1,4 @@
+✨ **Note:** This project was entirely vibe coded 😎.
 # Family Tree Application
 
 This is a web application for managing family tree data, featuring a FastAPI backend and a React frontend.
@@ -63,13 +64,12 @@ This project uses a `Makefile` to simplify common development tasks.
     make setup-local
     ```
 
-4.  **Initialize/Upgrade the database:**
-    Run Alembic migrations to create/update the database schema. Make sure your virtual environment is activated first.
+4.  **Run database migrations:**
+    This command uses Alembic to apply any pending database migrations.
     ```bash
-    source venv/bin/activate # Activate venv if not already active
-    alembic upgrade head
+    make migrate
     ```
-    *(Note: If you encounter issues, ensure your `.env` file is correctly configured and the `DATABASE_URL` is accessible.)*
+    *(Note: This requires the virtual environment to be set up via `make setup-local` first. If you encounter issues, ensure your `.env` file is correctly configured and the `DATABASE_URL` is accessible.)*
 
 5.  **(Optional) Seed the database:**
     Make sure your virtual environment is activated first.
@@ -150,7 +150,7 @@ Navigate to the project root directory and ensure your `.env` file is configured
 
 To build the images (if necessary) and start all services in detached mode:
 ```bash
-make docker-run
+make run-docker
 ```
 *   The **frontend** (Nginx serving the React app) will be accessible on port **80** (e.g., `http://your-server-ip` or `http://localhost`).
 *   The **backend** (FastAPI application) API is exposed internally but accessed via the frontend/Nginx proxy. Direct access is usually not needed externally but happens on port 8000 internally.
