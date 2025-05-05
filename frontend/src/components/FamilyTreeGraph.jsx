@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useMemo } from "react";
+import { useTranslation } from "react-i18next"; // Import useTranslation
 import CytoscapeComponent from "react-cytoscapejs"; // Keep for normalizeElements
 import cytoscape from "cytoscape";
 import elk from "cytoscape-elk"; // Keep elk registered
@@ -14,6 +15,7 @@ cytoscape.use(elk);
 qtip(cytoscape, $);
 
 const FamilyTreeGraph = ({ elements, onNodeClick, selectedNodeId }) => {
+  const { t } = useTranslation(); // Initialize useTranslation
   // Add selectedNodeId prop
   const containerRef = useRef(null); // Ref for the container div
   const cyRef = useRef(null); // Ref to store the cy instance
@@ -169,6 +171,7 @@ const FamilyTreeGraph = ({ elements, onNodeClick, selectedNodeId }) => {
     // Define the function to run layout and setup qTips
     const runLayoutAndTooltips = () => {
       console.log("Setting up qTips...");
+
       // Setup qTips immediately
       cy.nodes().forEach((node) => {
         const nodeData = node.data();
@@ -178,16 +181,63 @@ const FamilyTreeGraph = ({ elements, onNodeClick, selectedNodeId }) => {
           );
           return;
         }
-        let tooltipLabel = nodeData.label || `ID: ${node.id()}`;
+
+        const placeholder = t("common.noData", "No data"); // Use fully qualified key
+
+        // Calculate Age using i18n
+        let ageString = placeholder;
+        if (nodeData.birth_date) {
+          try {
+            const birthDate = new Date(nodeData.birth_date);
+            const endDate = nodeData.death_date
+              ? new Date(nodeData.death_date)
+              : new Date();
+
+            if (!isNaN(birthDate.getTime())) {
+              // Check if birth date is valid
+              let age = endDate.getFullYear() - birthDate.getFullYear();
+              const monthDiff = endDate.getMonth() - birthDate.getMonth();
+              if (
+                monthDiff < 0 ||
+                (monthDiff === 0 && endDate.getDate() < birthDate.getDate())
+              ) {
+                age--;
+              }
+
+              if (age >= 0) {
+                // Use i18next for pluralization
+                ageString = t("years", "{{count}} years", { count: age }); // Reverted to t hook
+                if (nodeData.death_date) {
+                  ageString += ` ${t("ageAtDeathSuffix", "(at time of death)")}`; // Reverted to t hook
+                }
+              } else {
+                console.warn(`Calculated negative age for node ${nodeData.id}`);
+                ageString = t("invalidDate", "Invalid date"); // Reverted to t hook
+              }
+            } else {
+              console.warn(
+                `Invalid birth date format for node ${nodeData.id}: ${nodeData.birth_date}`,
+              );
+              ageString = t("invalidDate", "Invalid date"); // Reverted to t hook
+            }
+          } catch (e) {
+            console.error(`Error calculating age for node ${nodeData.id}:`, e);
+            ageString = t("ageCalculationError", "Error"); // Reverted to t hook
+          }
+        }
+
+        // Build tooltip HTML using translation keys
+        let tooltipLabel = nodeData.label || `ID: ${node.id()}`; // Keep ID fallback for label
         let tooltipHTML = `<strong>${tooltipLabel}</strong>`;
-        if (nodeData.birth_date)
-          tooltipHTML += `<br/>Born: ${nodeData.birth_date}`;
-        if (nodeData.death_date)
-          tooltipHTML += `<br/>Died: ${nodeData.death_date}`;
-        if (nodeData.gender) tooltipHTML += `<br/>Gender: ${nodeData.gender}`;
+        tooltipHTML += `<br/>${t("birthDate", "Born")}: ${nodeData.birth_date || placeholder}`; // Reverted to t hook
+        tooltipHTML += `<br/>${t("deathDate", "Died")}: ${nodeData.death_date || placeholder}`; // Reverted to t hook
+        // Ensure lowercase key for translation
+        tooltipHTML += `<br/>${t("genderLabel", "Gender")}: ${nodeData.gender ? t(`gender.${nodeData.gender.toLowerCase()}`, nodeData.gender) : placeholder}`; // Reverted to t hook
+        tooltipHTML += `<br/>${t("ageLabel", "Age")}: ${ageString}`; // Reverted to t hook
+        // Note: Notes are not typically included in tooltips, only details panel.
 
         node.qtip({
-          content: tooltipHTML,
+          content: tooltipHTML, // Use the translated HTML
           position: { my: "bottom center", at: "top center", target: node },
           style: { classes: "qtip-bootstrap", tip: { width: 16, height: 8 } },
           show: { event: "mouseover", solo: true },
@@ -195,6 +245,7 @@ const FamilyTreeGraph = ({ elements, onNodeClick, selectedNodeId }) => {
         });
       }); // End qTip setup loop
       console.log("qTips setup complete.");
+      // Removed i18n.isInitialized check block
 
       console.log("Running ELK layout...");
       const elkLayout = cy.layout(layout); // Use ELK layout config

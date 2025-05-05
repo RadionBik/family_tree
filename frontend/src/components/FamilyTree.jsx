@@ -125,47 +125,102 @@ const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
       return null;
     }
 
+    const placeholder = t("common.noData", "No data"); // Use fully qualified key with fallback
+
+    // Calculate Age using i18n
+    let ageString = placeholder;
+    if (memberData.birth_date) {
+      try {
+        const birthDate = new Date(memberData.birth_date);
+        const endDate = memberData.death_date
+          ? new Date(memberData.death_date)
+          : new Date();
+
+        if (!isNaN(birthDate.getTime())) {
+          // Check if birth date is valid
+          let age = endDate.getFullYear() - birthDate.getFullYear();
+          const monthDiff = endDate.getMonth() - birthDate.getMonth();
+          if (
+            monthDiff < 0 ||
+            (monthDiff === 0 && endDate.getDate() < birthDate.getDate())
+          ) {
+            age--;
+          }
+
+          if (age >= 0) {
+            // Use i18next for pluralization (keys: years_one, years_few, years_many)
+            // Provide English fallbacks. Ensure these keys exist in your translation files.
+            ageString = t("years", "{{count}} years", { count: age });
+
+            if (memberData.death_date) {
+              // Add suffix using translation key
+              ageString += ` ${t("ageAtDeathSuffix", "(at time of death)")}`;
+            }
+          } else {
+            console.warn(`Calculated negative age for node ${memberData.id}`);
+            // Use translation key for invalid date
+            ageString = t("invalidDate", "Invalid date");
+          }
+        } else {
+          console.warn(
+            `Invalid birth date format for node ${memberData.id}: ${memberData.birth_date}`,
+          );
+          // Use translation key for invalid date
+          ageString = t("invalidDate", "Invalid date");
+        }
+      } catch (e) {
+        console.error(`Error calculating age for node ${memberData.id}:`, e);
+        // Use translation key for error
+        ageString = t("ageCalculationError", "Error");
+      }
+    }
+
     return (
       <Paper elevation={1} sx={{ marginTop: 3, padding: 2 }}>
         <Typography variant="h6" gutterBottom>
-          {t("familyTree.detailsTitle")}
+          {t("familyTree.detailsTitle", "Details")}
         </Typography>
         <Typography variant="body1" gutterBottom>
           <Typography component="span" fontWeight="bold">
-            {t("name")}:
+            {t("name", "Name")}:
           </Typography>{" "}
-          {memberData.label}
+          {memberData.label || placeholder}
         </Typography>
-        {memberData.birth_date && (
-          <Typography variant="body1" gutterBottom>
-            <Typography component="span" fontWeight="bold">
-              {t("birthDate")}:
-            </Typography>{" "}
-            {memberData.birth_date}
-          </Typography>
-        )}
-        {memberData.death_date && (
-          <Typography variant="body1" gutterBottom>
-            <Typography component="span" fontWeight="bold">
-              {t("deathDate")}:
-            </Typography>{" "}
-            {memberData.death_date}
-          </Typography>
-        )}
-        {memberData.gender && (
-          <Typography variant="body1" gutterBottom>
-            <Typography component="span" fontWeight="bold">
-              {t("genderLabel")}:
-            </Typography>{" "}
-            {t(`gender.${memberData.gender}`, memberData.gender)}
-          </Typography>
-        )}
+        <Typography variant="body1" gutterBottom>
+          <Typography component="span" fontWeight="bold">
+            {t("birthDate", "Born")}:
+          </Typography>{" "}
+          {memberData.birth_date || placeholder}
+        </Typography>
+        <Typography variant="body1" gutterBottom>
+          <Typography component="span" fontWeight="bold">
+            {t("deathDate", "Died")}:
+          </Typography>{" "}
+          {memberData.death_date || placeholder}
+        </Typography>
+        <Typography variant="body1" gutterBottom>
+          <Typography component="span" fontWeight="bold">
+            {t("genderLabel", "Gender")}:
+          </Typography>{" "}
+          {/* Ensure lowercase key for translation */}
+          {memberData.gender
+            ? t(`gender.${memberData.gender.toLowerCase()}`, memberData.gender)
+            : placeholder}
+        </Typography>
+        <Typography variant="body1" gutterBottom>
+          <Typography component="span" fontWeight="bold">
+            {t("ageLabel", "Age")}:
+          </Typography>{" "}
+          {ageString} {/* Now uses i18n placeholders */}
+        </Typography>
+        {/* Conditionally render Notes only if they exist */}
         {memberData.notes && (
           <Typography variant="body1" gutterBottom>
             <Typography component="span" fontWeight="bold">
-              {t("notes")}:
+              {t("notes", "Notes")}:
             </Typography>{" "}
-            {memberData.notes}
+            {memberData.notes}{" "}
+            {/* No placeholder needed here as we only render if notes exist */}
           </Typography>
         )}
         <Button
