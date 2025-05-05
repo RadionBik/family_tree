@@ -1,0 +1,32 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0 # Use the latest version
+    hooks:
+    -   id: trailing-whitespace
+        exclude: ^migrations/versions/
+    -   id: end-of-file-fixer
+        exclude: ^migrations/versions/
+    -   id: check-yaml
+    -   id: check-added-large-files
+    -   id: check-merge-conflict
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    # Check https://github.com/astral-sh/ruff-pre-commit for the latest rev
+    rev: v0.11.8
+    hooks:
+    -   id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        exclude: ^migrations/versions/
+    -   id: ruff-format
+        exclude: ^migrations/versions/
+
+-   repo: local
+    hooks:
+    -   id: eslint-prettier
+        name: eslint-prettier
+        entry: bash -c 'cd frontend && npm run lint -- --fix' # Run lint script in frontend dir with auto-fix
+        language: system # Use system's node/npm
+        types: [javascript]
+        files: ^frontend/.*\.(js|jsx)$ # Target only files within frontend
+        pass_filenames: false # npm run lint handles file discovery

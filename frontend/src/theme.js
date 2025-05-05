@@ -1,5 +1,5 @@
-import { createTheme } from '@mui/material/styles';
-import { red } from '@mui/material/colors';
+import { createTheme } from "@mui/material/styles";
+import { red } from "@mui/material/colors";
 
 // A basic theme instance.
 // We can customize this further later.
@@ -7,10 +7,10 @@ const theme = createTheme({
   palette: {
     // mode: 'light', // We can dynamically set this later
     primary: {
-      main: '#556cd6', // Example primary color
+      main: "#556cd6", // Example primary color
     },
     secondary: {
-      main: '#19857b', // Example secondary color
+      main: "#19857b", // Example secondary color
     },
     error: {
       main: red.A400,
@@ -23,12 +23,12 @@ const theme = createTheme({
   },
   typography: {
     fontFamily: [
-      'system-ui',
-      'Avenir',
-      'Helvetica',
-      'Arial',
-      'sans-serif',
-    ].join(','),
+      "system-ui",
+      "Avenir",
+      "Helvetica",
+      "Arial",
+      "sans-serif",
+    ].join(","),
     // You can customize variants like h1, body1, etc. here
   },
   // You can add component overrides here if needed

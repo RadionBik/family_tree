@@ -1,13 +1,13 @@
+import asyncio  # Import asyncio
 import os
-import sys
 from logging.config import fileConfig
 
-import asyncio # Import asyncio
-from sqlalchemy import pool
-from sqlalchemy import create_engine # Keep create_engine for potential offline use if needed
-from sqlalchemy.ext.asyncio import AsyncEngine # Import AsyncEngine
-
 from alembic import context
+from sqlalchemy import (
+    pool,
+)
+
+from app.utils.database import Base  # Import Base from your project
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -18,16 +18,10 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Add project root to sys.path
-# This allows Alembic to find your models
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
 # Import your models' Base metadata object
 # Make sure this path is correct for your project structure
-from app.utils.database import Base # Import Base from your project
-from app.models import family_member, relation # Import all models that define tables
+# Ensure the project root is in PYTHONPATH when running alembic
+# Base is imported above
 
 # target_metadata is the SQLAlchemy metadata object containing table definitions
 target_metadata = Base.metadata
@@ -53,7 +47,9 @@ def run_migrations_offline() -> None:
     # Ensure offline mode also uses the environment variable URL if needed
     url = os.getenv("DATABASE_URL")
     if not url:
-         raise ValueError("DATABASE_URL environment variable not set or empty for offline mode.")
+        raise ValueError(
+            "DATABASE_URL environment variable not set or empty for offline mode."
+        )
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -65,7 +61,7 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
-async def run_migrations_online() -> None: # Make the function async
+async def run_migrations_online() -> None:  # Make the function async
     """Run migrations in 'online' mode.
 
     In this scenario we need to create an AsyncEngine
@@ -82,7 +78,10 @@ async def run_migrations_online() -> None: # Make the function async
     config.set_main_option("sqlalchemy.url", db_url)
 
     # Create AsyncEngine directly using the URL from the environment variable
-    from sqlalchemy.ext.asyncio import create_async_engine # Ensure create_async_engine is imported if not already
+    from sqlalchemy.ext.asyncio import (
+        create_async_engine,  # Ensure create_async_engine is imported if not already
+    )
+
     connectable = create_async_engine(db_url, poolclass=pool.NullPool)
 
     # Define a synchronous function to run the migrations
@@ -97,6 +96,7 @@ async def run_migrations_online() -> None: # Make the function async
 
     # Dispose the engine after use
     await connectable.dispose()
+
 
 # Remove the unused async do_run_migrations helper
 # async def do_run_migrations(connection):

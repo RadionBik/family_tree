@@ -1,17 +1,17 @@
-import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import authService from '../services/authService'; // Import the auth service
+import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
+import authService from "../services/authService"; // Import the auth service
 
 const AdminLogin = ({ onLoginSuccess }) => {
   const { t } = useTranslation();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
+  const [message, setMessage] = useState({ type: "", text: "" });
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setMessage({ type: '', text: '' });
+    setMessage({ type: "", text: "" });
     setLoading(true);
 
     try {
@@ -19,33 +19,45 @@ const AdminLogin = ({ onLoginSuccess }) => {
       const loginData = await authService.login(username, password); // loginData contains { access_token, token_type }
 
       // On successful login:
-      setMessage({ type: 'success', text: t('adminLogin.successMessage', 'Login Successful!') });
+      setMessage({
+        type: "success",
+        text: t("adminLogin.successMessage", "Login Successful!"),
+      });
       // Call the callback function passed via props, potentially passing token/user info
       if (onLoginSuccess) {
-         onLoginSuccess(loginData); // Pass token data back
+        onLoginSuccess(loginData); // Pass token data back
       }
       // Clear fields after a short delay to show success message
       setTimeout(() => {
-          setUsername('');
-          setPassword('');
-          // Optionally redirect here
+        setUsername("");
+        setPassword("");
+        // Optionally redirect here
       }, 1500);
-
-
     } catch (error) {
-      let errorMessage = t('adminLogin.errorGeneric', 'Login failed. Please try again.');
+      let errorMessage = t(
+        "adminLogin.errorGeneric",
+        "Login failed. Please try again.",
+      );
       if (error.response) {
         // Use detail from API error response if available (e.g., invalid credentials)
         errorMessage = error.response.data?.detail || errorMessage;
         // Specific handling for common auth errors (e.g., 401 Unauthorized)
         if (error.response.status === 401) {
-           errorMessage = error.response.data?.detail || t('adminLogin.errorInvalid', 'Invalid username or password.'); // Add invalid key
+          errorMessage =
+            error.response.data?.detail ||
+            t("adminLogin.errorInvalid", "Invalid username or password."); // Add invalid key
         }
       } else if (error.request) {
-        errorMessage = t('adminLogin.errorNetwork', 'Network error. Please check connection.'); // Add network error key
+        errorMessage = t(
+          "adminLogin.errorNetwork",
+          "Network error. Please check connection.",
+        ); // Add network error key
       }
-      console.error("Admin Login Error:", error.response || error.message || error);
-      setMessage({ type: 'error', text: errorMessage });
+      console.error(
+        "Admin Login Error:",
+        error.response || error.message || error,
+      );
+      setMessage({ type: "error", text: errorMessage });
     } finally {
       setLoading(false);
     }
@@ -53,10 +65,13 @@ const AdminLogin = ({ onLoginSuccess }) => {
 
   return (
     <section className="admin-login">
-      <h2>{t('adminLogin.title')}</h2>
+      <h2>{t("adminLogin.title")}</h2>
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label htmlFor="admin-username">{t('adminLogin.usernameLabel')}</label> {/* Changed id */}
+          <label htmlFor="admin-username">
+            {t("adminLogin.usernameLabel")}
+          </label>{" "}
+          {/* Changed id */}
           <input
             type="text"
             id="admin-username" // Changed id
@@ -67,7 +82,10 @@ const AdminLogin = ({ onLoginSuccess }) => {
           />
         </div>
         <div className="form-group">
-          <label htmlFor="admin-password">{t('adminLogin.passwordLabel')}</label> {/* Changed id */}
+          <label htmlFor="admin-password">
+            {t("adminLogin.passwordLabel")}
+          </label>{" "}
+          {/* Changed id */}
           <input
             type="password"
             id="admin-password" // Changed id
@@ -78,12 +96,17 @@ const AdminLogin = ({ onLoginSuccess }) => {
           />
         </div>
         {message.text && (
-          <div className={`message ${message.type === 'success' ? 'message-success' : 'message-error'}`}>
+          <div
+            className={`message ${message.type === "success" ? "message-success" : "message-error"}`}
+          >
             {message.text}
           </div>
         )}
         <button type="submit" disabled={loading}>
-          {loading ? t('adminLogin.loggingInButton', 'Logging in...') : t('adminLogin.loginButton')} {/* Add loading button key */}
+          {loading
+            ? t("adminLogin.loggingInButton", "Logging in...")
+            : t("adminLogin.loginButton")}{" "}
+          {/* Add loading button key */}
         </button>
       </form>
     </section>

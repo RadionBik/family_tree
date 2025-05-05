@@ -1,9 +1,9 @@
-import React, { useState } from 'react'; // Import useState
-import Layout from '../components/Layout';
-import BirthdayTimeline from '../components/BirthdayTimeline';
-import FamilyTree from '../components/FamilyTree';
+import React, { useState } from "react"; // Import useState
+import Layout from "../components/Layout";
+import BirthdayTimeline from "../components/BirthdayTimeline";
+import FamilyTree from "../components/FamilyTree";
 // import AdminLogin from '../components/AdminLogin'; // Removed import
-import SubscriptionForm from '../components/SubscriptionForm';
+import SubscriptionForm from "../components/SubscriptionForm";
 
 // Placeholder components for sections - will be created later
 
@@ -17,7 +17,10 @@ const HomePage = () => {
         {/* Pass the setter function to BirthdayTimeline */}
         <BirthdayTimeline onMemberSelect={setSelectedMemberId} />
         {/* Pass the selected ID to FamilyTree */}
-        <FamilyTree selectedMemberId={selectedMemberId} onMemberSelect={setSelectedMemberId} />
+        <FamilyTree
+          selectedMemberId={selectedMemberId}
+          onMemberSelect={setSelectedMemberId}
+        />
         {/* <AdminLogin /> Removed rendering */}
         <SubscriptionForm />
       </div>

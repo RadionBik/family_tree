@@ -1,4 +1,4 @@
-import apiClient from './api';
+import apiClient from "./api";
 
 // Function to handle admin login API call
 const login = async (username, password) => {
@@ -6,12 +6,12 @@ const login = async (username, password) => {
   try {
     // FastAPI's OAuth2PasswordRequestForm expects form data
     const formData = new URLSearchParams();
-    formData.append('username', username);
-    formData.append('password', password);
+    formData.append("username", username);
+    formData.append("password", password);
 
-    const response = await apiClient.post('/auth/login', formData, {
+    const response = await apiClient.post("/auth/login", formData, {
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        "Content-Type": "application/x-www-form-urlencoded",
       },
     });
 
@@ -23,7 +23,10 @@ const login = async (username, password) => {
     }
     return response.data; // Return the token data
   } catch (error) {
-    console.error('Admin login API call failed:', error.response || error.message);
+    console.error(
+      "Admin login API call failed:",
+      error.response || error.message,
+    );
     // Re-throw the error so the component can handle it
     throw error;
   }
@@ -32,20 +35,19 @@ const login = async (username, password) => {
 // Function to handle logout (e.g., remove token)
 const logout = () => {
   console.log("Logging out admin...");
-  localStorage.removeItem('adminToken');
+  localStorage.removeItem("adminToken");
   // Optionally call a backend logout endpoint if it exists (e.g., for token blocklisting)
 };
 
 // Function to get the stored token
 const getToken = () => {
-  return localStorage.getItem('adminToken');
+  return localStorage.getItem("adminToken");
 };
 
 // Function to check if user is logged in (basic check)
 const isLoggedIn = () => {
   return !!getToken();
 };
-
 
 export default {
   login,

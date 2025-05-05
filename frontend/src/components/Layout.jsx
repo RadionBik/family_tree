@@ -1,16 +1,16 @@
-import React from 'react';
-import Box from '@mui/material/Box';
-import Container from '@mui/material/Container'; // Using Container for centered content with max-width
-import Header from './Header'; // Will be refactored next
-import Footer from './Footer'; // Will be refactored next
+import React from "react";
+import Box from "@mui/material/Box";
+import Container from "@mui/material/Container"; // Using Container for centered content with max-width
+import Header from "./Header"; // Will be refactored next
+import Footer from "./Footer"; // Will be refactored next
 
 const Layout = ({ children }) => {
   return (
     <Box
       sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: '100vh',
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "100vh",
         // bgcolor: 'background.default' // Theme handles background color via CssBaseline
       }}
     >

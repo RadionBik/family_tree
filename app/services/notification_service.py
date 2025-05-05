@@ -1,11 +1,12 @@
 import logging
-import smtplib
 import os
+import smtplib
 from email.mime.text import MIMEText
-from typing import Tuple, List
-from config import config # Import the config dictionary
+
+from config import config  # Import the config dictionary
 
 logger = logging.getLogger(__name__)
+
 
 def _get_russian_years_string(age: int) -> str:
     """Returns the correct Russian word for 'year(s)' based on age."""
@@ -19,7 +20,8 @@ def _get_russian_years_string(age: int) -> str:
     else:
         return "лет"
 
-def format_birthday_email(name: str, age: int) -> Tuple[str, str]:
+
+def format_birthday_email(name: str, age: int) -> tuple[str, str]:
     """
     Formats the birthday notification email subject and body in Russian.
 
@@ -44,7 +46,7 @@ def format_birthday_email(name: str, age: int) -> Tuple[str, str]:
     return subject, body
 
 
-def send_email(subject: str, body: str, recipients: List[str], app_config=None) -> bool:
+def send_email(subject: str, body: str, recipients: list[str], app_config=None) -> bool:
     """
     Sends an email using SMTP configuration.
 
@@ -59,7 +61,7 @@ def send_email(subject: str, body: str, recipients: List[str], app_config=None) 
     """
     if app_config is None:
         # Load config if not provided (e.g., when run from a script)
-        config_name = os.getenv('APP_ENV', 'default')
+        config_name = os.getenv("APP_ENV", "default")
         app_config = config[config_name]
         logger.info(f"Loaded '{config_name}' configuration for email sending.")
 
@@ -69,22 +71,30 @@ def send_email(subject: str, body: str, recipients: List[str], app_config=None) 
         return False
 
     sender = app_config.MAIL_DEFAULT_SENDER
-    msg = MIMEText(body, 'plain', 'utf-8') # Ensure UTF-8 encoding
-    msg['Subject'] = subject
-    msg['From'] = sender
+    msg = MIMEText(body, "plain", "utf-8")  # Ensure UTF-8 encoding
+    msg["Subject"] = subject
+    msg["From"] = sender
     # Join recipients for the 'To' header, but send individually later
-    msg['To'] = ", ".join(recipients)
+    msg["To"] = ", ".join(recipients)
 
     logger.info(f"Attempting to send email. Subject: '{subject}', To: {recipients}")
 
     try:
         # Use SMTP_SSL for implicit TLS (port 465) or SMTP for STARTTLS (port 587)
         if app_config.MAIL_PORT == 465:
-             server = smtplib.SMTP_SSL(app_config.MAIL_SERVER, app_config.MAIL_PORT, timeout=10)
-             logger.debug(f"Connecting via SMTP_SSL to {app_config.MAIL_SERVER}:{app_config.MAIL_PORT}")
+            server = smtplib.SMTP_SSL(
+                app_config.MAIL_SERVER, app_config.MAIL_PORT, timeout=10
+            )
+            logger.debug(
+                f"Connecting via SMTP_SSL to {app_config.MAIL_SERVER}:{app_config.MAIL_PORT}"
+            )
         else:
-            server = smtplib.SMTP(app_config.MAIL_SERVER, app_config.MAIL_PORT, timeout=10)
-            logger.debug(f"Connecting via SMTP to {app_config.MAIL_SERVER}:{app_config.MAIL_PORT}")
+            server = smtplib.SMTP(
+                app_config.MAIL_SERVER, app_config.MAIL_PORT, timeout=10
+            )
+            logger.debug(
+                f"Connecting via SMTP to {app_config.MAIL_SERVER}:{app_config.MAIL_PORT}"
+            )
             if app_config.MAIL_USE_TLS:
                 logger.debug("Starting TLS...")
                 server.starttls()

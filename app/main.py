@@ -1,42 +1,50 @@
-import os
-import logging
-from logging.handlers import RotatingFileHandler
 import contextlib
+import logging
+import os
+from logging.handlers import RotatingFileHandler
+
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
-from fastapi.middleware.cors import CORSMiddleware # Import CORS Middleware
-from fastapi.responses import PlainTextResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware  # Import CORS Middleware
+from fastapi.responses import JSONResponse, PlainTextResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from config import config, check_production_vars # Import config and the check function
-from .utils.localization import get_text # Import the localization function
-from .utils.database import init_models, async_engine # Import DB utils
-from . import models # Import models package to ensure Base metadata is populated
-from .api import family as family_router # Import the family API router
-from .api import birthdays as birthdays_router # Import the birthdays API router
-from .api import subscriptions as subscriptions_router # Import the subscriptions API router
-from .api import auth as auth_router # Import the new auth API router
+
+from config import check_production_vars, config  # Import config and the check function
+
+from . import models  # Import models package to ensure Base metadata is populated
+from .api import auth as auth_router  # Import the new auth API router
+from .api import birthdays as birthdays_router  # Import the birthdays API router
+from .api import family as family_router  # Import the family API router
+from .api import (
+    subscriptions as subscriptions_router,  # Import the subscriptions API router
+)
+from .utils.database import async_engine, init_models  # Import DB utils
+from .utils.localization import get_text  # Import the localization function
 
 # Basic logging setup (adapted for standard Python logging)
-log_dir = 'logs'
+log_dir = "logs"
 if not os.path.exists(log_dir):
     os.makedirs(log_dir)
 
-log_file = os.path.join(log_dir, 'family_tree.log')
+log_file = os.path.join(log_dir, "family_tree.log")
 
 # Configure file handler
 file_handler = RotatingFileHandler(log_file, maxBytes=10240, backupCount=10)
-file_handler.setFormatter(logging.Formatter(
-    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
-file_handler.setLevel(logging.DEBUG) # Change level to DEBUG
+file_handler.setFormatter(
+    logging.Formatter(
+        "%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]"
+    )
+)
+file_handler.setLevel(logging.DEBUG)  # Change level to DEBUG
 
 # Configure stream handler (console output)
 stream_handler = logging.StreamHandler()
-stream_handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
-stream_handler.setLevel(logging.DEBUG) # Change level to DEBUG
+stream_handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+stream_handler.setLevel(logging.DEBUG)  # Change level to DEBUG
 
 # Get root logger and add handlers
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG) # Change level to DEBUG
+logger.setLevel(logging.DEBUG)  # Change level to DEBUG
 logger.addHandler(file_handler)
 logger.addHandler(stream_handler)
 
@@ -44,13 +52,14 @@ logger.addHandler(stream_handler)
 # Determine config environment (e.g., 'development', 'production')
 # FastAPI often uses environment variables directly or Pydantic settings
 # For now, let's assume a simple way to get the config name
-config_name = os.getenv('APP_ENV', 'default')
-app_config = config[config_name] # Access the specific config object
+config_name = os.getenv("APP_ENV", "default")
+app_config = config[config_name]  # Access the specific config object
 
 # --- Check Production Environment Variables ---
 # Call the check function after logger and app_config are initialized
 check_production_vars(app_config, logger)
 # -------------------------------------------
+
 
 # --- Lifespan Context Manager ---
 @contextlib.asynccontextmanager
@@ -58,7 +67,7 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Application startup: Initializing database models...")
     # Ensure models are imported before calling init_models
-    _ = models # Reference models to prevent linters removing the import
+    _ = models  # Reference models to prevent linters removing the import
     await init_models()
     logger.info("Database models initialized.")
     yield
@@ -70,19 +79,20 @@ async def lifespan(app: FastAPI):
     else:
         logger.warning("Async engine not available for disposal.")
 
+
 # Create FastAPI app instance with lifespan manager
 app = FastAPI(
     title="Family Tree API",
     description="API for managing family tree data and birthday notifications.",
     version="0.1.0",
-    lifespan=lifespan # Register the lifespan context manager
+    lifespan=lifespan,  # Register the lifespan context manager
 )
 
 # --- CORS Middleware ---
 # Allow all origins for development purposes.
 # In production, restrict this to the actual frontend domain(s).
 origins = [
-    "*", # Allows all origins
+    "*",  # Allows all origins
     # Example for production:
     # "http://localhost",
     # "http://localhost:3000", # If your frontend runs on port 3000
@@ -93,10 +103,11 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"], # Allows all methods (GET, POST, etc.)
-    allow_headers=["*"], # Allows all headers
+    allow_methods=["*"],  # Allows all methods (GET, POST, etc.)
+    allow_headers=["*"],  # Allows all headers
 )
 # ----------------------
+
 
 # --- Exception Handlers ---
 @app.exception_handler(StarletteHTTPException)
@@ -110,6 +121,7 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
         content={"detail": detail_message},
     )
 
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     """Handles Pydantic validation errors."""
@@ -120,6 +132,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         content={"detail": get_text("invalid_input"), "errors": exc.errors()},
     )
 
+
 @app.exception_handler(Exception)
 async def generic_exception_handler(request: Request, exc: Exception):
     """Handles any other unexpected exceptions."""
@@ -128,6 +141,8 @@ async def generic_exception_handler(request: Request, exc: Exception):
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={"detail": get_text("error_occurred")},
     )
+
+
 # ------------------------
 
 # --- Database Initialization ---
@@ -139,10 +154,13 @@ async def generic_exception_handler(request: Request, exc: Exception):
 app.include_router(family_router.router, prefix="/api", tags=["Family"])
 app.include_router(birthdays_router.router, prefix="/api", tags=["Birthdays"])
 app.include_router(subscriptions_router.router, prefix="/api", tags=["Subscriptions"])
-app.include_router(auth_router.router, prefix="/api", tags=["Authentication"]) # Add the auth router
+app.include_router(
+    auth_router.router, prefix="/api", tags=["Authentication"]
+)  # Add the auth router
 # Add other routers here later
 logger.info("API routers included.")
 # -----------------
+
 
 # Basic root endpoint for health check / initial test
 @app.get("/", response_class=PlainTextResponse, tags=["Health"])
@@ -152,6 +170,7 @@ async def root():
     """
     logger.info("Accessed root health check endpoint '/'")
     return get_text("api_welcome")
+
 
 logger.info(f"Family Tree application startup in '{config_name}' mode.")
 
