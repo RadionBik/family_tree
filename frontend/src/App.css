@@ -12,42 +12,13 @@ body {
   color: #333;
 }
 
-/* Layout Container */
-.layout {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
+/* Layout Container - Handled by MUI Box in Layout.jsx */
 
-/* Header Styles */
-.header {
-  background: #333;
-  color: #fff;
-  padding: 1rem 0;
-  text-align: center;
-}
+/* Header Styles (Public) - Handled by MUI AppBar in Header.jsx */
 
-.header h1 {
-  margin: 0;
-}
+/* Main Content Area - Handled by MUI Container in Layout.jsx */
 
-/* Main Content Area */
-.main-content {
-  flex: 1; /* Allows content to grow and push footer down */
-  padding: 1rem;
-  /* max-width: 1200px; */ /* Removed width limit */
-  margin: 1rem 0; /* Removed auto margin for centering */
-  width: 100%; /* Use full width */
-}
-
-/* Footer Styles */
-.footer {
-  background: #333;
-  color: #fff;
-  text-align: center;
-  padding: 1rem 0;
-  margin-top: auto; /* Pushes footer to the bottom */
-}
+/* Footer Styles - Handled by MUI Box in Footer.jsx */
 
 /* Grid for HomePage sections (basic example) */
 .home-page-grid {
@@ -71,63 +42,17 @@ body {
 
 /* Add more specific styles as needed */
 
-/* Birthday Timeline Styles */
-.birthday-timeline ul {
-  list-style: none;
-  padding: 0;
-}
+/* Birthday Timeline Styles - Handled by MUI components in BirthdayTimeline.jsx */
 
-.birthday-timeline li {
-  background-color: #e9e9e9;
-  margin-bottom: 0.5rem;
-  padding: 0.5rem 1rem;
-  border-radius: 3px;
-}
-
-.birthday-timeline li strong {
-  color: #0056b3;
-}
-
-/* Family Tree Placeholder Styles */
-.family-tree .tree-placeholder {
-  border: 2px dashed #ccc;
-  padding: 2rem;
-  text-align: center;
-  color: #888;
-  min-height: 200px; /* Give it some height */
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  margin-top: 1rem;
-}
+/* Family Tree Placeholder Styles - Likely unused now, handled by MUI in FamilyTree.jsx */
 
 /* Form Styles */
 .admin-login form { /* Keep admin login form styles separate */
   margin-top: 1rem;
 }
 
-/* Subscription Form Specific Styles */
-.subscription-form {
-  width: 90%; /* Use 90% of the container width */
-  max-width: 600px; /* But don't exceed 600px */
-  margin: 2rem auto; /* Center the form and add vertical margin */
-  padding: 2rem; /* Add internal padding */
-  background-color: #fff; /* White background */
-  border-radius: 8px; /* Rounded corners */
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow */
-  text-align: center; /* Center title and button */
-}
-
-.subscription-form h2 {
-  margin-bottom: 1.5rem; /* More space below title */
-  color: #333;
-}
-
-.subscription-form form {
-  margin-top: 0; /* Remove default top margin */
-}
-
+/* Subscription Form Specific Styles - Handled by MUI components in SubscriptionForm.jsx */
+/* Note: General .form-group styles might still be used by AdminLogin, kept for now */
 .form-group {
   margin-bottom: 1rem;
   text-align: left;
@@ -140,6 +65,7 @@ body {
   color: #444;
 }
 
+/* Keep input styles for now as AdminLogin might use them */
 .form-group input[type="text"],
 .form-group input[type="password"],
 .form-group input[type="email"] {
@@ -150,7 +76,8 @@ body {
   font-size: 1rem;
 }
 
-button[type="submit"] { /* General button styles */
+/* General button styles - Keep for now, might be used by AdminLogin or other non-MUI buttons */
+button[type="submit"] {
   display: inline-block;
   background-color: #007bff;
   color: white;
@@ -164,13 +91,6 @@ button[type="submit"] { /* General button styles */
 
 button[type="submit"]:hover {
   background-color: #0056b3;
-}
-
-/* Center submit button specifically within subscription form */
-.subscription-form button[type="submit"] {
-  /* display: block; */ /* Make it block to center with margin */
-  /* margin: 1rem auto 0; */ /* Center the button */
-  /* Already centered due to text-align: center on .subscription-form */
 }
 
 

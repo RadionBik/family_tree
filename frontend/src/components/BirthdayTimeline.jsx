@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import birthdayService from '../services/birthdayService';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemText from '@mui/material/ListItemText';
+import CircularProgress from '@mui/material/CircularProgress';
+import Alert from '@mui/material/Alert';
+import Paper from '@mui/material/Paper'; // Use Paper for visual grouping
+import Link from '@mui/material/Link'; // Use Link for clickable name
+import Tooltip from '@mui/material/Tooltip'; // Use Tooltip for hover hint
 
 // Helper function to format date in Russian (e.g., "25 апреля")
 const formatRussianDate = (isoDateString) => {
@@ -17,7 +27,6 @@ const calculateUpcomingAge = (dateOfBirth, nextBirthdayDate) => {
   return nextBirthdayYear - birthYear;
 };
 
-
 // Accept onMemberSelect prop to notify parent of selection
 const BirthdayTimeline = ({ onMemberSelect }) => {
   const { t } = useTranslation();
@@ -30,33 +39,36 @@ const BirthdayTimeline = ({ onMemberSelect }) => {
       try {
         setLoading(true);
         setError(null);
-        // Fetch using the default window (90 days) defined in the service
         const response = await birthdayService.getUpcomingBirthdays();
-        // Assuming API returns data sorted chronologically and filtered for living members
         setBirthdays(response.data || []);
       } catch (err) {
         console.error("Error fetching birthdays:", err);
-        setError(t('birthdayTimeline.error')); // Use translation for error message
+        setError(t('birthdayTimeline.error'));
       } finally {
         setLoading(false);
       }
     };
 
     fetchBirthdays();
-  }, [t]); // Add t to dependency array if translations change
+  }, [t]);
 
-  return (
-    <section className="birthday-timeline">
-      <h2>{t('birthdayTimeline.title')}</h2>
-      {loading && <p>{t('birthdayTimeline.loading')}</p>}
-      {error && <p className="error-message">{error}</p>}
-      {!loading && !error && birthdays.length > 0 ? (
-        <ul>
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
+          <CircularProgress />
+        </Box>
+      );
+    }
+    if (error) {
+      return <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>;
+    }
+    if (birthdays.length > 0) {
+      return (
+        <List dense> {/* dense reduces padding */}
           {birthdays.map(birthday => {
-            // Use correct property names from the API response (birth_date, member_id)
             const upcomingAge = calculateUpcomingAge(birthday.birth_date, birthday.next_birthday_date);
             const formattedDate = formatRussianDate(birthday.next_birthday_date);
-            // Handle click on the name
             const handleNameClick = () => {
               if (onMemberSelect) {
                 onMemberSelect(birthday.member_id);
@@ -64,23 +76,39 @@ const BirthdayTimeline = ({ onMemberSelect }) => {
             };
 
             return (
-              <li key={birthday.member_id}>
-                {/* Make the name clickable */}
-                <strong
-                  onClick={handleNameClick}
-                  style={{ cursor: 'pointer', textDecoration: 'underline' }} // Add basic styling
-                  title={t('birthdayTimeline.clickToHighlight')} // Add tooltip
-                >
-                  {birthday.name}
-                </strong> - {formattedDate} ({t('birthdayTimeline.turnsAge', { age: upcomingAge })})
-              </li>
+              <ListItem key={birthday.member_id} disablePadding>
+                <ListItemText
+                  primary={
+                    <Tooltip title={t('birthdayTimeline.clickToHighlight')} placement="top">
+                      <Link
+                        component="button" // Renders as a button but looks like a link
+                        variant="body1" // Adjust variant as needed
+                        onClick={handleNameClick}
+                        sx={{ cursor: 'pointer', textAlign: 'left', p: 0, fontWeight: 'bold' }} // Style as needed
+                      >
+                        {birthday.name}
+                      </Link>
+                    </Tooltip>
+                  }
+                  secondary={`${formattedDate} (${t('birthdayTimeline.turnsAge', { age: upcomingAge })})`}
+                />
+              </ListItem>
             );
           })}
-        </ul>
-      ) : (
-        !loading && !error && <p>{t('birthdayTimeline.noBirthdays')}</p>
-      )}
-    </section>
+        </List>
+      );
+    }
+    return <Typography sx={{ mt: 2 }}>{t('birthdayTimeline.noBirthdays')}</Typography>;
+  };
+
+  return (
+    // Use Paper for better visual separation and styling
+    <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
+      <Typography variant="h6" component="h2" gutterBottom>
+        {t('birthdayTimeline.title')}
+      </Typography>
+      {renderContent()}
+    </Paper>
   );
 };
 
