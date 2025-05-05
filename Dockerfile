@@ -12,10 +12,14 @@ WORKDIR /app
 
 # Install system dependencies
 # Install cron and ensure log directory exists
-RUN apt-get update && apt-get install -y --no-install-recommends cron procps && \
+# gosu is used to drop privileges in the entrypoint script
+RUN apt-get update && apt-get install -y --no-install-recommends cron procps curl gosu && \
     rm -rf /var/lib/apt/lists/* && \
     mkdir -p /app/logs && \
     touch /app/logs/cron.log # Create log file, owned by root
+
+# Create a non-root user and group
+RUN groupadd -r appgroup && useradd --no-log-init -r -g appgroup appuser
 
 # Install Python dependencies
 # Copy only requirements first to leverage Docker cache
@@ -24,12 +28,19 @@ RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
 # Copy the rest of the application code into the container
+# Copy application code BEFORE changing ownership
 COPY . .
 
-# Add crontab file and set permissions
+# Copy crontab file and set permissions (still done as root)
 COPY scripts/birthday-cron /etc/cron.d/birthday-cron
 RUN chmod 0644 /etc/cron.d/birthday-cron && \
     crontab /etc/cron.d/birthday-cron # Apply the crontab
+
+# Change ownership of the app directory to the non-root user
+RUN chown -R appuser:appgroup /app
+# Note: We don't switch USER here; entrypoint will use gosu
+
+# This section is removed as it's incorporated above
 
 # Expose the port Uvicorn runs on
 EXPOSE 8000
@@ -47,8 +58,11 @@ ENTRYPOINT ["/app/docker-entrypoint.sh"]
 # --port 8000 matches the EXPOSE directive.
 # --reload enables auto-reloading for development (can be removed for production image)
 # --reload-dir /app explicitly tells uvicorn where the code to watch is
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "/app"]
+# Default command for production (no reload)
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 # Optional: Add a healthcheck
 # HEALTHCHECK --interval=5m --timeout=3s \
-#   CMD curl -f http://localhost:5000/ || exit 1
+# Use curl installed earlier to check the root endpoint
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8000/ || exit 1

@@ -1,53 +1,47 @@
-services:
-  web:
-    build: .
-    container_name: family_tree_web
-    ports:
-      - "8000:8000" # Map host port 8000 to container port 8000 (Uvicorn default)
-    volumes:
-      - .:/app # Mount the current directory to /app in the container for live code changes
-      - ./logs:/app/logs # Mount logs directory
-      # Persist SQLite database file outside the container
-      # Note: For production, consider a more robust database solution (PostgreSQL, MySQL)
-      # and manage its data volume separately.
-      - ./data:/app/data # Mount a data directory for the SQLite DB
-    environment:
-      # Load environment variables from .env file
-      - APP_ENV=development # Use APP_ENV for FastAPI config
-      # Override database URI to use the mounted volume with async prefix
-      - DATABASE_URL=sqlite+aiosqlite:////app/data/app.db
-      # Initial Admin User Credentials (Change for production!)
-      - INITIAL_ADMIN_USERNAME=admin
-      - INITIAL_ADMIN_EMAIL=admin@example.com
-      - INITIAL_ADMIN_PASSWORD=changeme # <-- IMPORTANT: Change this!
-      # You can add other environment variables here or load from an .env file
-      # env_file:
-      #   - .env
-    # depends_on:
-      # - db # If you were using a separate database container
-    restart: unless-stopped
+version: '3.8'
 
-# Optional: Define a volume for the database if not mounting a host directory
-# volumes:
-#   app_data:
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: family_tree_backend
+    env_file:
+      - .env # Load variables from .env file
+    environment:
+      # Define DATABASE_URL for SQLite, pointing inside the container volume
+      DATABASE_URL: sqlite+aiosqlite:////app/data/app.db
+      APP_ENV: ${APP_ENV:-production} # Default to production if not set
+    volumes:
+      - app_logs:/app/logs # Mount named volume for logs
+      - sqlite_data:/app/data # Mount named volume for SQLite DB file
+      # No code mounting for production
+    ports:
+      # Expose port 8000 internally; map externally only if no reverse proxy
+      - "8000:8000"
+    # No database dependency needed for SQLite
+    restart: unless-stopped
+    # Healthcheck is defined in the backend Dockerfile
 
   frontend:
     build:
-      context: ./frontend # Path to the frontend directory
+      context: ./frontend
       dockerfile: Dockerfile
+      # Pass build args if needed, e.g., for VITE_API_BASE_URL if not using relative paths
+      # args:
+      #   VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
     container_name: family_tree_frontend
     ports:
-      - "3000:3000" # Map host port 3000 to container port 3000 (serve default)
-    volumes:
-      # Mount source code for development (optional, remove for production build)
-      # Note: Changes won't reflect immediately due to build stage unless dev server is used in Dockerfile
-      - ./frontend/src:/app/src
-    environment:
-      # Ensure Node environment is set if needed by build tools
-      - NODE_ENV=development
-      # Point API requests to the backend service within Docker network
-      # This requires updating the frontend code to use this variable
-      - VITE_API_BASE_URL=http://web:8000/api
+      # Map host port 80 (or e.g., 8080) to container port 80 (Nginx)
+      - "80:80"
+    # No volumes needed for production build (static files are in the image)
+    # No environment needed for Nginx unless customizing its config dynamically
     depends_on:
-      - web # Frontend depends on the backend API
+      - backend # Optional, depends if frontend needs backend at build time (it doesn't here)
     restart: unless-stopped
+
+volumes:
+  sqlite_data: # Volume for the SQLite database file
+    driver: local
+  app_logs:
+    driver: local

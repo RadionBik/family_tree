@@ -12,7 +12,7 @@ echo "Starting cron service..."
 cron &
 echo "Cron service started."
 
-# Execute the command passed as arguments to the script
-# (e.g., the CMD from Dockerfile)
-echo "Executing command: $@"
-exec "$@"
+# Execute the command passed as arguments to the script (e.g., the CMD from Dockerfile)
+# Use gosu to drop privileges to the 'appuser' user before executing the command
+echo "Executing command as appuser: $@"
+exec gosu appuser "$@"

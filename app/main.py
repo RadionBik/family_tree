@@ -7,7 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware # Import CORS Middleware
 from fastapi.responses import PlainTextResponse, JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from config import config # Assuming config.py holds settings accessible as attributes
+from config import config, check_production_vars # Import config and the check function
 from .utils.localization import get_text # Import the localization function
 from .utils.database import init_models, async_engine # Import DB utils
 from . import models # Import models package to ensure Base metadata is populated
@@ -46,6 +46,11 @@ logger.addHandler(stream_handler)
 # For now, let's assume a simple way to get the config name
 config_name = os.getenv('APP_ENV', 'default')
 app_config = config[config_name] # Access the specific config object
+
+# --- Check Production Environment Variables ---
+# Call the check function after logger and app_config are initialized
+check_production_vars(app_config, logger)
+# -------------------------------------------
 
 # --- Lifespan Context Manager ---
 @contextlib.asynccontextmanager

@@ -16,19 +16,21 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# Stage 2: Serve the application using a lightweight server
-FROM node:18-alpine
+# Stage 2: Serve the application using Nginx
+# Use a specific stable version of nginx alpine
+FROM nginx:1.25-alpine
 
-WORKDIR /app
+# Remove default Nginx welcome page
+RUN rm -rf /usr/share/nginx/html/*
 
-# Install 'serve' to serve static files
-RUN npm install -g serve
+# Copy custom Nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy the build output from the build stage
-COPY --from=build /app/dist /app/dist
+# Copy the build output from the build stage to the Nginx web root
+COPY --from=build /app/dist /usr/share/nginx/html
 
-# Expose the port the app runs on (serve defaults to 3000)
-EXPOSE 3000
+# Expose port 80 for Nginx
+EXPOSE 80
 
-# Command to serve the build directory
-CMD ["serve", "-s", "dist", "-l", "3000"]
+# Nginx will start automatically when the container launches based on the base image CMD
+# No explicit CMD needed here unless overriding default Nginx behavior
