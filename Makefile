@@ -27,7 +27,7 @@ setup-local: venv/bin/activate frontend/node_modules
 
 venv/bin/activate: requirements.txt
 	@echo "Creating Python virtual environment..."
-	python3 -m venv venv
+	python3.12 -m venv venv
 	@echo "Activating virtual environment and installing Python dependencies..."
 	@source venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt
 	@touch venv/bin/activate # Update timestamp

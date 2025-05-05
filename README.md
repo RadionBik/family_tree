@@ -37,7 +37,7 @@ This project uses a `Makefile` to simplify common development tasks.
 
 ### Prerequisites
 
-- Python 3.10+
+- Python 3.12+
 - Node.js 18+ and npm
 - Git
 - Make
