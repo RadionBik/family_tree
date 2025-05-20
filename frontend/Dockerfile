@@ -5,6 +5,7 @@ FROM node:18-alpine AS build
 WORKDIR /app
 
 # Copy package.json and package-lock.json (or yarn.lock)
+# Copy them separately to leverage Docker cache for dependencies
 COPY package*.json ./
 
 # Install dependencies
@@ -13,24 +14,30 @@ RUN npm install
 # Copy the rest of the application code
 COPY . .
 
-# Build the application
+# Build the application for production
+# This will create a 'dist' folder (or similar, depending on Vite config) in /app
 RUN npm run build
 
-# Stage 2: Serve the application using Nginx
-# Use a specific stable version of nginx alpine
-FROM nginx:1.25-alpine
+# Stage 2: Serve the application with Caddy
+FROM caddy:2-alpine
 
-# Remove default Nginx welcome page
-RUN rm -rf /usr/share/nginx/html/*
+# Argument for selecting the Caddyfile, defaults to production Caddyfile
+ARG CADDY_FILE=Caddyfile
 
-# Copy custom Nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Set the working directory for Caddy (optional, but good practice)
+WORKDIR /srv
 
-# Copy the build output from the build stage to the Nginx web root
-COPY --from=build /app/dist /usr/share/nginx/html
+# Copy built assets from the build stage to Caddy's serving directory
+# Assumes your build output is in /app/dist from the 'build' stage
+COPY --from=build /app/dist .
 
-# Expose port 80 for Nginx
+# Copy the selected Caddyfile into the container
+# Caddy will automatically find and use a Caddyfile in /etc/caddy/
+COPY ../${CADDY_FILE} /etc/caddy/Caddyfile
+
+# Expose port 80 for HTTP and 443 for HTTPS
 EXPOSE 80
+EXPOSE 443
 
-# Nginx will start automatically when the container launches based on the base image CMD
-# No explicit CMD needed here unless overriding default Nginx behavior
+# The Caddy image's default command is `caddy run --config /etc/caddy/Caddyfile --adapter caddyfile`,
+# which is what we want. So, no explicit CMD is needed here.

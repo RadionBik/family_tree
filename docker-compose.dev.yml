@@ -1,0 +1,15 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        CADDY_FILE: Caddyfile.dev
+    ports:
+      - "443:443" # HTTPS
+      - "80:80"   # HTTP (for redirect to HTTPS by Caddy)
+    # You might want to add volume mounts for live code reloading in development
+    # For example, if your Vite setup supports it:
+    # volumes:
+    #   - ./frontend/src:/app/src
+    #   - ./frontend/public:/app/public
