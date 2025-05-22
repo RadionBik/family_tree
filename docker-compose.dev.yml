@@ -1,15 +1,34 @@
 services:
+  backend:
+    volumes:
+      # Mount the current directory (project root) on the host to /app in the container
+      # This allows live code reloading for the backend.
+      # Ensure your backend Dockerfile's WORKDIR is /app or similar,
+      # and your entrypoint/cmd uses a development server that watches for changes (e.g., uvicorn --reload).
+      - .:/app
+      # Note: If you have a venv or other large/unnecessary folders in your project root
+      # that you don't want mounted, you might consider more specific mounts like:
+      # - ./app:/app/app
+      # - ./scripts:/app/scripts
+      # - ./config.py:/app/config.py
+      # - etc.
+      # However, .:/app is often convenient for development.
+
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        CADDY_FILE: Caddyfile.dev
+        CADDY_FILE: Caddyfile.dev # Ensures Caddy uses the dev config
     ports:
-      - "443:443" # HTTPS
-      - "80:80"   # HTTP (for redirect to HTTPS by Caddy)
-    # You might want to add volume mounts for live code reloading in development
-    # For example, if your Vite setup supports it:
-    # volumes:
-    #   - ./frontend/src:/app/src
-    #   - ./frontend/public:/app/public
+      - "443:443" # HTTPS for Caddy
+      - "80:80"   # HTTP (for redirect to HTTPS by Caddy, or direct access if Caddy is configured for it)
+    volumes:
+      # Mount frontend source files for live reloading with Vite HMR.
+      # Assumes the frontend container's WORKDIR is /app and Vite serves from there.
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/vite.config.js:/app/vite.config.js
+      - ./frontend/package.json:/app/package.json
+      - ./frontend/package-lock.json:/app/package-lock.json

@@ -5,9 +5,6 @@ import os
 from datetime import date
 from typing import Any
 
-# Ensure the project root is in PYTHONPATH when running this script
-# Example: PYTHONPATH=$PYTHONPATH:/path/to/family_tree python scripts/seed_db.py
-# Import async components and models
 from sqlalchemy import select, text  # Import text and select
 from sqlalchemy.ext.asyncio import AsyncSession  # Import AsyncSession
 
@@ -185,7 +182,7 @@ async def seed_admin_user(db: AsyncSession):
     admin_username = os.getenv("INITIAL_ADMIN_USERNAME", "admin")
     admin_email = os.getenv("INITIAL_ADMIN_EMAIL", "admin@example.com")
     admin_password = os.getenv(
-        "INITIAL_ADMIN_PASSWORD", "password"
+        "INITIAL_ADMIN_PASSWORD"
     )  # Use a strong default or require env var
 
     if not admin_password:
@@ -232,6 +229,49 @@ async def seed_admin_user(db: AsyncSession):
         await db.rollback()
 
 
+async def seed_viewer_user(db: AsyncSession):
+    """Seeds a shared 'viewer' user if one doesn't exist."""
+    viewer_username = "privet"
+    # IMPORTANT: Use a strong password, preferably from an environment variable
+    viewer_password = os.getenv("VIEWER_USER_PASSWORD")
+    viewer_email = "viewer@example.com"  # Or another placeholder email
+
+    if not viewer_password:
+        logger.error(
+            "VIEWER_USER_PASSWORD not set (or default is empty). Cannot seed viewer user."
+        )
+        return
+
+    logger.info(f"Checking for existing viewer user '{viewer_username}'...")
+
+    stmt = select(AdminUser).where(AdminUser.username == viewer_username)
+    result = await db.execute(stmt)
+    existing_viewer = result.scalar_one_or_none()
+
+    if existing_viewer:
+        logger.info(
+            f"Viewer user '{existing_viewer.username}' already exists. Skipping viewer seeding."
+        )
+        return
+
+    logger.info(f"Creating shared viewer user: {viewer_username}")
+    try:
+        new_viewer = AdminUser(
+            username=viewer_username,
+            email=viewer_email,
+            password=viewer_password,  # Password setter handles hashing
+            role="viewer",
+            is_active=True,
+        )
+        db.add(new_viewer)
+        await db.commit()
+        await db.refresh(new_viewer)
+        logger.info(f"Successfully created shared viewer user with ID: {new_viewer.id}")
+    except Exception as e:
+        logger.exception(f"Failed to create shared viewer user: {e}")
+        await db.rollback()
+
+
 async def clear_data(db: AsyncSession):
     """Optional: Clears existing data."""
     logger.warning("Clearing existing FamilyMember, Relation, and AdminUser data...")
@@ -260,6 +300,10 @@ async def main():
     # Seed the initial admin user
     async with AsyncSessionFactory() as db_admin:
         await seed_admin_user(db_admin)
+
+    # Seed the shared viewer user
+    async with AsyncSessionFactory() as db_viewer:
+        await seed_viewer_user(db_viewer)
 
 
 if __name__ == "__main__":

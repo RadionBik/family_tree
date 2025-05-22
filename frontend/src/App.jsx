@@ -6,7 +6,9 @@ import {
   useNavigate,
 } from "react-router-dom";
 import HomePage from "./pages/HomePage";
-import AdminLogin from "./components/AdminLogin";
+import AdminLogin from "./components/AdminLogin"; // Keep for admin section
+import UserLogin from "./components/UserLogin"; // Import UserLogin
+import ProtectedRoute from "./components/ProtectedRoute"; // Import ProtectedRoute
 import AdminLayout from "./components/AdminLayout";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminMemberListPage from "./pages/AdminMemberListPage";
@@ -48,12 +50,21 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<HomePage />} />
-        {/* <Route path="/admin/login" element={<LoginRedirector /* onLoginSuccess={handleAdminLoginSuccess} * / />} /> */}
+        {/* User Login Route - Public */}
+        <Route path="/login" element={<UserLogin />} />
 
-        {/* Admin Routes (Protected by AdminLayout) */}
-        {/* <Route path="/admin" element={<AdminLayout /* onLogout={handleAdminLogout} * / />}> */}
+        {/* Protected Routes for general users */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/" element={<HomePage />} />
+          {/* Add other user-protected routes here if needed */}
+        </Route>
+
+        {/* Admin Login Route - Public (if keeping admin section separate) */}
+        <Route path="/admin/login" element={<LoginRedirector /* onLoginSuccess={handleAdminLoginSuccess} */ />} />
+
+        {/* Admin Routes (Protected by AdminLayout - assuming AdminLayout also checks token or is wrapped by its own ProtectedRoute variant) */}
+        {/* If AdminLayout doesn't handle its own protection, it should also be wrapped by a ProtectedRoute, potentially one that checks for an admin role in the token if we differentiate tokens/roles later */}
+        <Route path="/admin" element={<AdminLayout /* onLogout={handleAdminLogout} */ />}>
         {/* Index route for /admin */}
         {/* <Route index element={<AdminDashboard />} /> */}
         {/* Member Management Routes */}
@@ -61,7 +72,7 @@ function App() {
         {/* <Route path="members/add" element={<AdminMemberFormPage />} /> */}
         {/* <Route path="members/edit/:id" element={<AdminMemberFormPage />} /> */}
         {/* Add other admin routes here (e.g., relationships, settings) */}
-        {/* </Route> */}
+        </Route> {/* This was the missing closing tag for the /admin route group */}
 
         {/* Optional: Add a 404 Not Found route */}
         {/* <Route path="*" element={<NotFoundPage />} /> */}

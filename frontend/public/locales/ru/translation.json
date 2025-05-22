@@ -1,6 +1,7 @@
 {
   "header": {
-    "title": "Семейное Древо"
+    "title": "Семейное Древо",
+    "logoutButton": "Выйти"
   },
   "footer": {
     "copyright": "© {{year}} Семейное Древо. Все права защищены."
@@ -164,5 +165,17 @@
     "previous": "Назад",
     "next": "Вперед",
     "pageInfo": "Стр. {{currentPage}} из {{totalPages}}"
+  },
+  "userLogin": {
+    "title": "Войдите для просмотра сайта",
+    "usernameLabel": "Имя пользователя",
+    "passwordLabel": "Пароль",
+    "loginButton": "Войти",
+    "loggingInButton": "Вход...",
+    "successMessage": "Вход выполнен успешно! Перенаправление...",
+    "errorGeneric": "Ошибка входа. Проверьте учетные данные и попробуйте снова.",
+    "errorInvalid": "Неверное имя пользователя или пароль.",
+    "errorNetwork": "Ошибка сети. Проверьте подключение.",
+    "errorTokenMissing": "Вход успешен, но токен не получен."
   }
 }

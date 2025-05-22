@@ -25,21 +25,15 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      # Pass build args if needed, e.g., for VITE_API_BASE_URL if not using relative paths
-      # args:
-      #   VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
     container_name: family_tree_frontend
     ports:
-      # Map host port 80 (or e.g., 8080) to container port 80 (Nginx)
       - "80:80"
-    # No volumes needed for production build (static files are in the image)
-    # No environment needed for Nginx unless customizing its config dynamically
     depends_on:
       - backend # Optional, depends if frontend needs backend at build time (it doesn't here)
     restart: unless-stopped
 
 volumes:
-  sqlite_data: # Volume for the SQLite database file
+  sqlite_data:
     driver: local
   app_logs:
     driver: local
