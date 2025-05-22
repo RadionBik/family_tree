@@ -72,7 +72,7 @@ build: docker-compose.yml Dockerfile frontend/Dockerfile
 
 # Build and run with Docker Compose (Dev mode - HTTPS)
 run-docker: .env docker-compose.yml docker-compose.dev.yml Dockerfile frontend/Dockerfile frontend/Caddyfile.dev
-	@echo "Stopping existing Docker containers and removing volumes (if any)..."
+	@echo "Stopping existing Docker containers..."
 	@docker-compose -f docker-compose.yml -f docker-compose.dev.yml down --remove-orphans || true
 	@echo "Building and running Docker containers for DEV (HTTPS)..."
 	@docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
@@ -81,7 +81,7 @@ run-docker: .env docker-compose.yml docker-compose.dev.yml Dockerfile frontend/D
 
 # Build and run with Docker Compose (Prod mode - HTTP)
 run-docker-prod: .env docker-compose.yml Dockerfile frontend/Dockerfile frontend/Caddyfile
-	@echo "Stopping existing Docker containers and removing volumes (if any)..."
+	@echo "Stopping existing Docker containers..."
 	@docker-compose down --remove-orphans || true
 	@echo "Building and running Docker containers for PROD (HTTP)..."
 	@docker-compose up --build -d

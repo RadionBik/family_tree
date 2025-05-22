@@ -1,18 +1,8 @@
 services:
   backend:
     volumes:
-      # Mount the current directory (project root) on the host to /app in the container
-      # This allows live code reloading for the backend.
-      # Ensure your backend Dockerfile's WORKDIR is /app or similar,
-      # and your entrypoint/cmd uses a development server that watches for changes (e.g., uvicorn --reload).
-      - .:/app
-      # Note: If you have a venv or other large/unnecessary folders in your project root
-      # that you don't want mounted, you might consider more specific mounts like:
-      # - ./app:/app/app
-      # - ./scripts:/app/scripts
-      # - ./config.py:/app/config.py
-      # - etc.
-      # However, .:/app is often convenient for development.
+      - ./:/app
+      - ./db_data:/app/db_data
 
   frontend:
     build:
@@ -26,9 +16,4 @@ services:
     volumes:
       # Mount frontend source files for live reloading with Vite HMR.
       # Assumes the frontend container's WORKDIR is /app and Vite serves from there.
-      - ./frontend/src:/app/src
-      - ./frontend/public:/app/public
-      - ./frontend/index.html:/app/index.html
-      - ./frontend/vite.config.js:/app/vite.config.js
-      - ./frontend/package.json:/app/package.json
-      - ./frontend/package-lock.json:/app/package-lock.json
+      - ./frontend:/app/frontend
