@@ -33,7 +33,7 @@ COPY --from=build /app/dist .
 
 # Copy the selected Caddyfile into the container
 # Caddy will automatically find and use a Caddyfile in /etc/caddy/
-COPY ../${CADDY_FILE} /etc/caddy/Caddyfile
+COPY ${CADDY_FILE} /etc/caddy/Caddyfile
 
 # Expose port 80 for HTTP and 443 for HTTPS
 EXPOSE 80

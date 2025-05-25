@@ -27,7 +27,7 @@ services:
       dockerfile: Dockerfile
     container_name: family_tree_frontend
     ports:
-      - "80:80"
+      - "443:443"
     depends_on:
       - backend # Optional, depends if frontend needs backend at build time (it doesn't here)
     restart: unless-stopped

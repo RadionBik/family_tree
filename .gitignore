@@ -33,3 +33,5 @@ venv
 *.db
 *.json
 source_data
+
+deploy.sh
