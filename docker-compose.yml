@@ -3,6 +3,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        HOST_UID: ${UID}
+        HOST_GID: ${GID}
     container_name: family_tree_backend
     env_file:
       - .env_prod # Load variables from .env file

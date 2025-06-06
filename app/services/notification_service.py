@@ -61,7 +61,7 @@ def send_email(subject: str, body: str, recipients: list[str], app_config=None) 
     """
     if app_config is None:
         # Load config if not provided (e.g., when run from a script)
-        config_name = os.getenv("APP_ENV", "default")
+        config_name = os.getenv("APP_ENV", "development")
         app_config = config[config_name]
         logger.info(f"Loaded '{config_name}' configuration for email sending.")
 

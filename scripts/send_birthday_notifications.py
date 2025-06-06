@@ -39,7 +39,7 @@ async def run_notifications():
     logger.info("Starting birthday notification script.")
 
     # Load configuration
-    config_name = os.getenv("APP_ENV", "default")
+    config_name = os.getenv("APP_ENV", "development")
     app_config = config[config_name]
     logger.info(f"Loaded '{config_name}' configuration.")
 

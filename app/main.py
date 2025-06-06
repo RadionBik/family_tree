@@ -21,6 +21,13 @@ from .api import (
 from .utils.database import async_engine, init_models  # Import DB utils
 from .utils.localization import get_text  # Import the localization function
 
+# Determine config environment (e.g., 'development', 'production')
+# FastAPI often uses environment variables directly or Pydantic settings
+# For now, let's assume a simple way to get the config name
+config_name = os.getenv("APP_ENV", "development")
+app_config = config[config_name]  # Access the specific config object
+
+
 # Basic logging setup (adapted for standard Python logging)
 log_dir = "logs"
 if not os.path.exists(log_dir):
@@ -35,25 +42,26 @@ file_handler.setFormatter(
         "%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]"
     )
 )
-file_handler.setLevel(logging.DEBUG)  # Change level to DEBUG
+file_handler.setLevel(logging.INFO)  # Set default to INFO
 
 # Configure stream handler (console output)
 stream_handler = logging.StreamHandler()
-stream_handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
-stream_handler.setLevel(logging.DEBUG)  # Change level to DEBUG
+stream_handler.setFormatter(
+    logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+)
+stream_handler.setLevel(logging.INFO)  # Set default to INFO
 
 # Get root logger and add handlers
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)  # Change level to DEBUG
+logger.setLevel(logging.INFO)  # Set default to INFO
 logger.addHandler(file_handler)
 logger.addHandler(stream_handler)
 
-
-# Determine config environment (e.g., 'development', 'production')
-# FastAPI often uses environment variables directly or Pydantic settings
-# For now, let's assume a simple way to get the config name
-config_name = os.getenv("APP_ENV", "default")
-app_config = config[config_name]  # Access the specific config object
+# Set debug level based on config
+if app_config.DEBUG:
+    logger.setLevel(logging.DEBUG)
+    stream_handler.setLevel(logging.DEBUG)
+    file_handler.setLevel(logging.DEBUG)
 
 # --- Check Production Environment Variables ---
 # Call the check function after logger and app_config are initialized

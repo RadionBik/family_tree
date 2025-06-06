@@ -71,15 +71,16 @@ run-docker: .env_local docker-compose.yml docker-compose.dev.yml Dockerfile fron
 	@echo "Stopping existing Docker containers..."
 	@docker-compose -f docker-compose.yml -f docker-compose.dev.yml down --remove-orphans || true
 	@echo "Building and running Docker containers for DEV (HTTPS)..."
-	@docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
+	@docker-compose --env-file .env_local -f docker-compose.yml -f docker-compose.dev.yml up --build -d
 	@echo "Application should be running in DEV mode. Frontend at http://localhost:5173, Backend API via frontend."
 
 # Build and run with Docker Compose (Prod mode - HTTP)
+ENV_FILE ?= .env_prod
 run-docker-prod: .env_prod docker-compose.yml Dockerfile frontend/Dockerfile frontend/Caddyfile
 	@echo "Stopping existing Docker containers..."
-	@docker-compose down --remove-orphans || true
+	@docker-compose --env-file $(ENV_FILE) down --remove-orphans || true
 	@echo "Building and running Docker containers for PROD (HTTP)..."
-	@docker-compose up --build -d
+	@docker-compose --env-file $(ENV_FILE) up --build -d
 	@echo "Application should be running in PROD mode. Frontend at http://localhost, Backend API via frontend."
 
 # Seed database in Docker

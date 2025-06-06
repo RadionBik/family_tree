@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Load JWT settings from config based on environment
-config_name = os.getenv("APP_ENV", "default")
+config_name = os.getenv("APP_ENV", "development")
 app_config = config[config_name]
 JWT_SECRET_KEY = app_config.JWT_SECRET_KEY
 JWT_ALGORITHM = app_config.JWT_ALGORITHM
