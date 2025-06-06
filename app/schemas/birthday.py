@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict
 class UpcomingBirthdayRead(BaseModel):
     """Schema for representing an upcoming birthday."""
 
-    member_id: int
+    member_id: str
     name: str
     birth_date: date
     next_birthday_date: date  # The actual date of the upcoming birthday

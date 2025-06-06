@@ -52,28 +52,33 @@ function App() {
       <Routes>
         {/* User Login Route - Public */}
         <Route path="/login" element={<UserLogin />} />
-
         {/* Protected Routes for general users */}
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<HomePage />} />
           {/* Add other user-protected routes here if needed */}
         </Route>
-
         {/* Admin Login Route - Public (if keeping admin section separate) */}
-        <Route path="/admin/login" element={<LoginRedirector /* onLoginSuccess={handleAdminLoginSuccess} */ />} />
-
+        <Route
+          path="/admin/login"
+          element={
+            <LoginRedirector /* onLoginSuccess={handleAdminLoginSuccess} */ />
+          }
+        />
         {/* Admin Routes (Protected by AdminLayout - assuming AdminLayout also checks token or is wrapped by its own ProtectedRoute variant) */}
         {/* If AdminLayout doesn't handle its own protection, it should also be wrapped by a ProtectedRoute, potentially one that checks for an admin role in the token if we differentiate tokens/roles later */}
-        <Route path="/admin" element={<AdminLayout /* onLogout={handleAdminLogout} */ />}>
-        {/* Index route for /admin */}
-        {/* <Route index element={<AdminDashboard />} /> */}
-        {/* Member Management Routes */}
-        {/* <Route path="members" element={<AdminMemberListPage />} /> */}
-        {/* <Route path="members/add" element={<AdminMemberFormPage />} /> */}
-        {/* <Route path="members/edit/:id" element={<AdminMemberFormPage />} /> */}
-        {/* Add other admin routes here (e.g., relationships, settings) */}
-        </Route> {/* This was the missing closing tag for the /admin route group */}
-
+        <Route
+          path="/admin"
+          element={<AdminLayout /* onLogout={handleAdminLogout} */ />}
+        >
+          {/* Index route for /admin */}
+          {/* <Route index element={<AdminDashboard />} /> */}
+          {/* Member Management Routes */}
+          {/* <Route path="members" element={<AdminMemberListPage />} /> */}
+          {/* <Route path="members/add" element={<AdminMemberFormPage />} /> */}
+          {/* <Route path="members/edit/:id" element={<AdminMemberFormPage />} /> */}
+          {/* Add other admin routes here (e.g., relationships, settings) */}
+        </Route>{" "}
+        {/* This was the missing closing tag for the /admin route group */}
         {/* Optional: Add a 404 Not Found route */}
         {/* <Route path="*" element={<NotFoundPage />} /> */}
       </Routes>

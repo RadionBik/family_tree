@@ -9,6 +9,7 @@ from sqlalchemy import (  # Import Enum from SQLAlchemy
     DateTime,
     ForeignKey,
     Integer,
+    String,
     UniqueConstraint,
 )
 from sqlalchemy import Enum as SQLAlchemyEnum
@@ -34,12 +35,12 @@ class Relation(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     # Foreign key linking to the 'source' member of the relationship
-    from_member_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("family_members.id"), nullable=False, index=True
+    from_member_id: Mapped[str] = mapped_column(
+        String(100), ForeignKey("family_members.id"), nullable=False, index=True
     )
     # Foreign key linking to the 'target' member of the relationship
-    to_member_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("family_members.id"), nullable=False, index=True
+    to_member_id: Mapped[str] = mapped_column(
+        String(100), ForeignKey("family_members.id"), nullable=False, index=True
     )
     # Use SQLAlchemyEnum, referencing the Python Enum. Store values as strings in DB.
     relation_type: Mapped[RelationTypeEnum] = mapped_column(

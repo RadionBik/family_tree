@@ -8,11 +8,11 @@ services:
       - .env # Load variables from .env file
     environment:
       # Define DATABASE_URL for SQLite, pointing inside the container volume
-      DATABASE_URL: sqlite+aiosqlite:////app/db_data/app.db
+      DATABASE_URL: sqlite+aiosqlite:////db_data/app.db
       APP_ENV: ${APP_ENV:-production} # Default to production if not set
     volumes:
       - app_logs:/app/logs # Mount named volume for logs
-      - ./db_data:/app/db_data # Mount host directory for SQLite DB file
+      - ./db_data:/db_data # Mount host directory for SQLite DB file
       # No code mounting for production
     ports:
       # Expose port 8000 internally; map externally only if no reverse proxy

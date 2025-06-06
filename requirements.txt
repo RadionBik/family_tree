@@ -13,4 +13,11 @@ alembic==1.15.2
 argon2-cffi==23.1.0 # Modern password hashing
 python-jose[cryptography]==3.4.0 # For JWT handling
 
+# Google Sheets integration
+gspread==6.0.2
+google-api-python-client==2.119.0
+google-auth-httplib2==0.2.0
+google-auth-oauthlib==1.2.0
+python-dotenv==1.0.1
+
 pre-commit==4.2.0 # For code quality checks before commit (Latest available in index)

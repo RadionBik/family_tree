@@ -3,6 +3,8 @@ from typing import Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.models.family_member import GenderEnum
+
 # Generic type variable for paginated items
 T = TypeVar("T")
 
@@ -34,8 +36,8 @@ class RelationRead(RelationBase):
     """Schema for reading relation data, including IDs and related members."""
 
     id: int
-    from_member_id: int
-    to_member_id: int
+    from_member_id: str
+    to_member_id: str
     # We might include nested member info later if needed, but keep it simple for now
     # from_member: 'FamilyMemberReadMinimal' # Forward reference
     # to_member: 'FamilyMemberReadMinimal' # Forward reference
@@ -46,8 +48,8 @@ class RelationRead(RelationBase):
 class RelationCreate(RelationBase):
     """Schema for creating a new relationship."""
 
-    from_member_id: int
-    to_member_id: int
+    from_member_id: str
+    to_member_id: str
     # relation_type, start_date, end_date are inherited from RelationBase
 
 
@@ -57,26 +59,25 @@ class RelationCreate(RelationBase):
 class FamilyMemberBase(BaseModel):
     """Base schema for family member data."""
 
-    name: str
+    first_name: str
+    last_name: str | None = None
     birth_date: date | None = None
     death_date: date | None = None
-    gender: str | None = None  # Consider Enum later
-    location: str | None = None  # Added location
-    notes: str | None = None  # Frontend 'bio' maps here
+    gender: GenderEnum | None = None
+    location: str | None = None
+    notes: str | None = None
 
 
 class FamilyMemberCreate(BaseModel):
     """Schema for creating a new family member."""
 
-    # Accept separate name parts, combine in service layer
     first_name: str
-    last_name: str
-    middle_name: str | None = None
+    last_name: str | None = None
     birth_date: date | None = None
     death_date: date | None = None
-    gender: str | None = None  # Consider Enum later
+    gender: GenderEnum | None = None
     location: str | None = None
-    notes: str | None = None  # Frontend 'bio' maps here
+    notes: str | None = None
 
 
 class FamilyMemberUpdate(BaseModel):
@@ -84,18 +85,17 @@ class FamilyMemberUpdate(BaseModel):
 
     first_name: str | None = None
     last_name: str | None = None
-    middle_name: str | None = None
     birth_date: date | None = None
     death_date: date | None = None
-    gender: str | None = None  # Consider Enum later
+    gender: GenderEnum | None = None
     location: str | None = None
-    notes: str | None = None  # Frontend 'bio' maps here
+    notes: str | None = None
 
 
 class FamilyMemberReadMinimal(FamilyMemberBase):
     """Minimal schema for reading family member data (e.g., in lists or nested)."""
 
-    id: int
+    id: str
 
     model_config = ConfigDict(from_attributes=True)  # Enable ORM mode
 
@@ -103,7 +103,8 @@ class FamilyMemberReadMinimal(FamilyMemberBase):
 class FamilyMemberRead(FamilyMemberBase):
     """Full schema for reading a single family member, including relationships."""
 
-    id: int
+    id: str
+    name: str
     created_at: datetime
     updated_at: datetime
     relationships_from: list[
@@ -113,7 +114,7 @@ class FamilyMemberRead(FamilyMemberBase):
         RelationRead
     ] = []  # List of relations where this member is 'to'
     is_descendant: bool | None = (
-        None  # Flag indicating if the member is a direct descendant in the main line
+        None  # Flag indicating if the member is a direct descendant
     )
 
     model_config = ConfigDict(from_attributes=True)  # Enable ORM mode
@@ -136,6 +137,6 @@ class PaginatedFamilyMembersResponse(PaginatedResponse[FamilyMemberRead]):
 class MemberListDelete(BaseModel):
     """Schema for deleting a list of members by their IDs."""
 
-    member_ids: list[int] = Field(
+    member_ids: list[str] = Field(
         ..., description="List of family member IDs to delete."
     )

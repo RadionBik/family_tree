@@ -26,7 +26,10 @@ const UserLogin = () => {
         localStorage.setItem("adminToken", loginData.access_token); // Using "adminToken" as per plan
         setMessage({
           type: "success",
-          text: t("userLogin.successMessage", "Login Successful! Redirecting..."),
+          text: t(
+            "userLogin.successMessage",
+            "Login Successful! Redirecting...",
+          ),
         });
         // Navigate to homepage after a short delay
         setTimeout(() => {
@@ -34,7 +37,12 @@ const UserLogin = () => {
         }, 1500);
       } else {
         // Should not happen if authService.login throws on failure, but as a fallback
-        throw new Error(t("userLogin.errorTokenMissing", "Login successful, but no token received."));
+        throw new Error(
+          t(
+            "userLogin.errorTokenMissing",
+            "Login successful, but no token received.",
+          ),
+        );
       }
     } catch (error) {
       let errorMessage = t(
@@ -64,22 +72,35 @@ const UserLogin = () => {
     } finally {
       setLoading(false);
       // Do not clear fields immediately on error, allow user to correct
-      if (message.type !== "success") { // Clear only on success for redirect
+      if (message.type !== "success") {
+        // Clear only on success for redirect
         setTimeout(() => {
-            if (document.activeElement instanceof HTMLElement) {
-                document.activeElement.blur(); // Remove focus to prevent issues if component unmounts
-            }
+          if (document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur(); // Remove focus to prevent issues if component unmounts
+          }
         }, 0);
       }
     }
   };
 
   return (
-    <section className="user-login" style={{ maxWidth: '400px', margin: '50px auto', padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
+    <section
+      className="user-login"
+      style={{
+        maxWidth: "400px",
+        margin: "50px auto",
+        padding: "20px",
+        border: "1px solid #ccc",
+        borderRadius: "8px",
+      }}
+    >
       <h2>{t("userLogin.title", "Login to View Site")}</h2>
       <form onSubmit={handleSubmit}>
-        <div className="form-group" style={{ marginBottom: '15px' }}>
-          <label htmlFor="user-username" style={{ display: 'block', marginBottom: '5px' }}>
+        <div className="form-group" style={{ marginBottom: "15px" }}>
+          <label
+            htmlFor="user-username"
+            style={{ display: "block", marginBottom: "5px" }}
+          >
             {t("userLogin.usernameLabel", "Username")}
           </label>
           <input
@@ -89,11 +110,14 @@ const UserLogin = () => {
             onChange={(e) => setUsername(e.target.value)}
             required
             disabled={loading}
-            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+            style={{ width: "100%", padding: "8px", boxSizing: "border-box" }}
           />
         </div>
-        <div className="form-group" style={{ marginBottom: '15px' }}>
-          <label htmlFor="user-password" style={{ display: 'block', marginBottom: '5px' }}>
+        <div className="form-group" style={{ marginBottom: "15px" }}>
+          <label
+            htmlFor="user-password"
+            style={{ display: "block", marginBottom: "5px" }}
+          >
             {t("userLogin.passwordLabel", "Password")}
           </label>
           <input
@@ -103,18 +127,35 @@ const UserLogin = () => {
             onChange={(e) => setPassword(e.target.value)}
             required
             disabled={loading}
-            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+            style={{ width: "100%", padding: "8px", boxSizing: "border-box" }}
           />
         </div>
         {message.text && (
           <div
             className={`message ${message.type === "success" ? "message-success" : "message-error"}`}
-            style={{ padding: '10px', marginBottom: '15px', border: `1px solid ${message.type === 'success' ? 'green' : 'red'}`, color: message.type === 'success' ? 'green' : 'red' }}
+            style={{
+              padding: "10px",
+              marginBottom: "15px",
+              border: `1px solid ${message.type === "success" ? "green" : "red"}`,
+              color: message.type === "success" ? "green" : "red",
+            }}
           >
             {message.text}
           </div>
         )}
-        <button type="submit" disabled={loading} style={{ width: '100%', padding: '10px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            width: "100%",
+            padding: "10px",
+            backgroundColor: "#007bff",
+            color: "white",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer",
+          }}
+        >
           {loading
             ? t("userLogin.loggingInButton", "Logging in...")
             : t("userLogin.loginButton", "Login")}

@@ -1,6 +1,6 @@
-import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
-import authService from '../services/authService';
+import React from "react";
+import { Navigate, Outlet } from "react-router-dom";
+import authService from "../services/authService";
 
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = authService.isLoggedIn(); // Using "adminToken" as per plan

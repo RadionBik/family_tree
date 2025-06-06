@@ -1,19 +1,33 @@
 services:
   backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        HOST_UID: ${UID}
+        HOST_GID: ${GID}
+    env_file:
+      - .env
+    environment:
+      PYTHONPATH: "/app"
+      DATABASE_URL: "sqlite:///db_data/app.db"
     volumes:
       - ./:/app
-      - ./db_data:/app/db_data
+      - ./db_data:/db_data
+      - app_logs:/app/logs
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        CADDY_FILE: Caddyfile.dev # Ensures Caddy uses the dev config
+        CADDY_FILE: Caddyfile.dev
     ports:
-      - "443:443" # HTTPS for Caddy
-      - "80:80"   # HTTP (for redirect to HTTPS by Caddy, or direct access if Caddy is configured for it)
+      - "443:443"
+      - "80:80"
     volumes:
-      # Mount frontend source files for live reloading with Vite HMR.
-      # Assumes the frontend container's WORKDIR is /app and Vite serves from there.
       - ./frontend:/app/frontend
+
+volumes:
+  app_logs:
+    driver: local

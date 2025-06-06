@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 from sqlalchemy import (  # Import Enum from SQLAlchemy
     Date,
     DateTime,
-    Integer,
     String,
     Text,
 )
@@ -31,8 +30,11 @@ class FamilyMember(Base):
     __tablename__ = "family_members"
 
     # Columns using SQLAlchemy 2.0 type-annotated style
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    first_name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    last_name: Mapped[str | None] = mapped_column(
+        String(100), nullable=True, index=True
+    )
     birth_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     death_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     # Use SQLAlchemyEnum, referencing the Python Enum. Store values as strings in DB.
@@ -66,8 +68,15 @@ class FamilyMember(Base):
         cascade="all, delete-orphan",  # Optional: if deleting a member should delete their relations
     )
 
+    @property
+    def name(self) -> str:
+        """Returns the full name of the family member."""
+        if self.last_name:
+            return f"{self.first_name} {self.last_name}"
+        return self.first_name
+
     def __repr__(self):
-        return f"<FamilyMember {self.name} (ID: {self.id})>"
+        return f"<FamilyMember {self.first_name} {self.last_name} (ID: {self.id})>"
 
     # Add data validation methods if needed (using Pydantic models is often preferred in FastAPI)
     # def validate_gender(self):

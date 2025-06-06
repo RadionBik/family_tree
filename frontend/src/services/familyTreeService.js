@@ -73,7 +73,6 @@ const createMemberAdmin = async (memberData) => {
   const apiData = {
     first_name: memberData.firstName,
     last_name: memberData.lastName,
-    middle_name: memberData.middleName || null, // Ensure null if empty
     birth_date: memberData.birthDate || null,
     death_date: memberData.deathDate || null,
     gender: memberData.gender || null,
@@ -98,7 +97,6 @@ const updateMemberAdmin = async (id, memberData) => {
   const apiData = {
     first_name: memberData.firstName,
     last_name: memberData.lastName,
-    middle_name: memberData.middleName || null,
     birth_date: memberData.birthDate || null,
     death_date: memberData.deathDate || null,
     gender: memberData.gender || null,
@@ -150,8 +148,8 @@ const createRelationshipAdmin = async (
     `Creating relationship: ${fromMemberId} -> ${toMemberId} (${relationType})`,
   );
   const apiData = {
-    from_member_id: parseInt(fromMemberId, 10), // Ensure IDs are numbers
-    to_member_id: parseInt(toMemberId, 10),
+    from_member_id: fromMemberId,
+    to_member_id: toMemberId,
     relation_type: relationType, // e.g., 'parent', 'spouse'
     start_date: startDate || null,
     end_date: endDate || null,

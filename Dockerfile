@@ -7,6 +7,10 @@ ENV PYTHONUNBUFFERED=1
 # ENV APP_ENV=development # Set via docker-compose or other means
 # Note: For production, you'd likely set APP_ENV=production
 
+# Declare build arguments for user and group IDs
+ARG HOST_UID
+ARG HOST_GID
+
 # Set the working directory in the container
 WORKDIR /app
 
@@ -18,8 +22,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends cron procps cur
     mkdir -p /app/logs && \
     touch /app/logs/cron.log # Create log file, owned by root
 
-# Create a non-root user and group
-RUN groupadd -r appgroup && useradd --no-log-init -r -g appgroup appuser
+# Create a non-root user and group using host UID/GID
+RUN if getent group ${HOST_GID:-1000} >/dev/null; then \
+        echo "Group with GID ${HOST_GID:-1000} already exists." ; \
+    else \
+        groupadd --gid ${HOST_GID:-1000} appgroup ; \
+    fi && \
+    if getent passwd ${HOST_UID:-1000} >/dev/null; then \
+        echo "User with UID ${HOST_UID:-1000} already exists." ; \
+    else \
+        useradd --uid ${HOST_UID:-1000} --gid appgroup --system --no-create-home --shell /bin/false appuser ; \
+    fi
 
 # Install Python dependencies
 # Copy only requirements first to leverage Docker cache

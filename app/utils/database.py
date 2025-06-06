@@ -72,13 +72,16 @@ async def init_models():
     if not async_engine:
         logger.error("Async engine not initialized. Cannot create tables.")
         return
-    async with async_engine.begin() as conn:
+    async with async_engine.begin():
         try:
-            # Drop and recreate tables (useful for development, use migrations in prod)
-            # await conn.run_sync(Base.metadata.drop_all)
-            # logger.info("Existing tables dropped (if any).")
-            await conn.run_sync(Base.metadata.create_all)
-            logger.info("Database tables checked/created based on models.")
+            # In a production environment, or when using Alembic for migrations,
+            # Base.metadata.create_all should generally NOT be called here.
+            # Migrations handle schema creation and updates.
+            # This line is commented out to allow Alembic to manage the schema.
+            # await conn.run_sync(Base.metadata.create_all)
+            logger.info(
+                "Database tables are expected to be managed by Alembic migrations."
+            )
         except Exception as e:
             logger.exception(f"Error during table creation: {e}")
 

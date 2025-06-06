@@ -37,7 +37,7 @@ const transformDataForCytoscape = (members) => {
       const targetId = String(relation.to_member_id);
       const sourceMember = memberMap.get(sourceId);
 
-      if (sourceMember && sourceMember.is_descendant === true) {
+      if (sourceMember) {
         if (!edgeIds.has(edgeId) && relation.relation_type !== "CHILD") {
           elements.push({
             data: {

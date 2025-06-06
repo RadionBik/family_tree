@@ -1,4 +1,5 @@
 import logging
+import uuid
 from collections import deque  # Use deque for BFS queue
 
 from sqlalchemy import func, select  # Import func for count
@@ -12,8 +13,8 @@ from app.models.relation import RelationTypeEnum
 from app.schemas.family import (
     FamilyMemberCreate,
     FamilyMemberRead,
+    FamilyMemberReadMinimal,
     FamilyMemberUpdate,
-    RelationCreate,
     RelationRead,  # Keep relation schemas
 )
 from app.utils.localization import get_text  # For exception messages
@@ -266,8 +267,8 @@ async def get_member_by_id(db: AsyncSession, member_id: int) -> FamilyMemberRead
 
 
 async def create_family_member(
-    db: AsyncSession, member_data: FamilyMemberCreate
-) -> FamilyMemberRead:
+    db: AsyncSession, member_data: FamilyMemberCreate, member_id: str | None = None
+) -> FamilyMemberReadMinimal:
     """
     Creates a new family member in the database.
 
@@ -282,14 +283,15 @@ async def create_family_member(
         f"Creating new family member: {member_data.first_name} {member_data.last_name}"
     )
 
-    # Combine name parts
-    full_name = f"{member_data.last_name} {member_data.first_name}"
-    if member_data.middle_name:
-        full_name += f" {member_data.middle_name}"
+    # Generate ID if not provided
+    if member_id is None:
+        member_id = str(uuid.uuid4())
 
     # Create ORM model instance
     new_member_orm = FamilyMember(
-        name=full_name,
+        id=member_id,
+        last_name=member_data.last_name,
+        first_name=member_data.first_name,
         birth_date=member_data.birth_date,
         death_date=member_data.death_date,
         gender=member_data.gender,
@@ -303,13 +305,16 @@ async def create_family_member(
         await db.flush()  # Assigns ID to new_member_orm
         await db.refresh(new_member_orm)  # Load default values like created_at
         await db.commit()  # Commit the transaction
-        logger.info(f"Successfully created member ID {new_member_orm.id}: {full_name}")
+        logger.info(
+            f"Successfully created member ID {new_member_orm.id}: {member_data.first_name} {member_data.last_name}"
+        )
         # Return the Pydantic model
-        return FamilyMemberRead.model_validate(new_member_orm)
+        return FamilyMemberReadMinimal.model_validate(new_member_orm)
     except Exception as e:
         await db.rollback()  # Rollback in case of error
         logger.exception(
-            f"Database error creating family member {full_name}.", exc_info=True
+            f"Database error creating family member {member_data.first_name} {member_data.last_name}.",
+            exc_info=True,
         )
         raise e  # Re-raise the exception for the API layer to handle
 
@@ -355,11 +360,6 @@ async def update_family_member(
         current_parts[0] = update_data["last_name"]
     if "first_name" in update_data:
         current_parts[1] = update_data["first_name"]
-    if "middle_name" in update_data:
-        if len(current_parts) > 2:
-            current_parts[2] = update_data["middle_name"]
-        elif update_data["middle_name"]:  # Add middle name if provided and wasn't there
-            current_parts.append(update_data["middle_name"])
     # Filter out empty strings that might result from None middle names
     member_orm.name = " ".join(filter(None, current_parts))
 
@@ -433,7 +433,10 @@ async def delete_family_member(db: AsyncSession, member_id: int) -> None:
 
 
 async def create_relationship(
-    db: AsyncSession, relation_data: RelationCreate
+    db: AsyncSession,
+    from_member_id: str,
+    to_member_id: str,
+    relation_type: RelationTypeEnum,
 ) -> RelationRead:
     """
     Creates a new relationship between two family members.
@@ -450,43 +453,26 @@ async def create_relationship(
         InvalidRelationError: If the relationship is invalid (e.g., self-relation, duplicate).
     """
     logger.info(
-        f"Creating relationship: {relation_data.from_member_id} -> {relation_data.to_member_id} ({relation_data.relation_type})"
+        f"Creating relationship: {from_member_id} -> {to_member_id} ({relation_type})"
     )
 
     # --- Validation ---
-    if relation_data.from_member_id == relation_data.to_member_id:
+    if from_member_id == to_member_id:
         logger.warning("Attempted to create self-relation.")
-        raise InvalidRelationError("error_relation_self")  # Add this key
+        raise InvalidRelationError("error_relation_self")
 
-    # Check if members exist
-    from_member = await db.get(FamilyMember, relation_data.from_member_id)
+    from_member = await db.get(FamilyMember, from_member_id)
     if not from_member:
-        raise MemberNotFoundError(relation_data.from_member_id)
-    to_member = await db.get(FamilyMember, relation_data.to_member_id)
+        raise MemberNotFoundError(from_member_id)
+    to_member = await db.get(FamilyMember, to_member_id)
     if not to_member:
-        raise MemberNotFoundError(relation_data.to_member_id)
-
-    # TODO: Check for duplicate relationships (same members, same type)?
-    # TODO: Add more complex validation (e.g., prevent multiple parent sets?)
-
-    # Validate relation_type against Enum (optional but good practice)
-    try:
-        relation_enum = RelationTypeEnum(
-            relation_data.relation_type.lower()
-        )  # Convert to lower for safety
-    except ValueError:
-        logger.warning(f"Invalid relation type provided: {relation_data.relation_type}")
-        raise InvalidRelationError(
-            "error_relation_invalid_type", type=relation_data.relation_type
-        )  # Add this key
+        raise MemberNotFoundError(to_member_id)
 
     # --- Creation ---
     new_relation_orm = Relation(
-        from_member_id=relation_data.from_member_id,
-        to_member_id=relation_data.to_member_id,
-        relation_type=relation_enum,  # Store the Enum member
-        start_date=relation_data.start_date,
-        end_date=relation_data.end_date,
+        from_member_id=from_member_id,
+        to_member_id=to_member_id,
+        relation_type=relation_type,
     )
 
     try:
@@ -500,7 +486,7 @@ async def create_relationship(
     except Exception as e:
         await db.rollback()
         logger.exception(
-            f"Database error creating relationship {relation_data.from_member_id} -> {relation_data.to_member_id}.",
+            f"Database error creating relationship {from_member_id} -> {to_member_id}.",
             exc_info=True,
         )
         raise e  # Re-raise for API layer
