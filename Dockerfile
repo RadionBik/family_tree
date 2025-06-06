@@ -20,7 +20,8 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends cron procps curl gosu && \
     rm -rf /var/lib/apt/lists/* && \
     mkdir -p /app/logs && \
-    touch /app/logs/cron.log # Create log file, owned by root
+    touch /app/logs/cron.log && \
+    touch /app/logs/ingestion.log # Create log files, owned by root
 
 # Create a non-root user and group using host UID/GID
 RUN if getent group ${HOST_GID:-1000} >/dev/null; then \

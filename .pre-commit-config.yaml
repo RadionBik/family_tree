@@ -13,7 +13,7 @@ repos:
     -   id: check-merge-conflict
 -   repo: https://github.com/astral-sh/ruff-pre-commit
     # Check https://github.com/astral-sh/ruff-pre-commit for the latest rev
-    rev: v0.11.8
+    rev: v0.11.13
     hooks:
     -   id: ruff
         args: [--fix, --exit-non-zero-on-fix]
@@ -25,7 +25,7 @@ repos:
     hooks:
     -   id: eslint-prettier
         name: eslint-prettier
-        entry: bash -c 'cd frontend && npm run lint -- --fix' # Run lint script in frontend dir with auto-fix
+        entry: docker-compose run --rm frontend npm run lint -- --fix
         language: system # Use system's node/npm
         types: [javascript]
         files: ^frontend/.*\.(js|jsx)$ # Target only files within frontend

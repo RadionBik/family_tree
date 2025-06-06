@@ -6,20 +6,11 @@
 # This will be the address Caddy listens on inside the container.
 # Your docker-compose.yml will map host port 443 (for HTTPS) and 80 (for HTTP->HTTPS redirect) to this.
 localhost {
-	# Enable Brotli and Gzip compression
-	encode gzip
+	# Reverse proxy for the Vite development server
+	reverse_proxy http://localhost:5173
 
-	# Set the root directory for your static files
-	# This should match where you copy your built assets in the Dockerfile
-	root * /srv
-
-	# Serve static files
-	file_server
-
-	# Handle Single Page Application (SPA) routing
-	# If a requested file isn't found, serve index.html
-	# so React Router can handle the route.
-	try_files {path} {path}/ /index.html
+	# Reverse proxy for API calls to the backend service
+	reverse_proxy /api/* http://backend:8000
 
 	# Optional: Add some basic security headers
 	header {

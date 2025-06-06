@@ -34,4 +34,4 @@ venv
 *.json
 source_data
 
-deploy.sh
+.env*

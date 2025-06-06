@@ -15,6 +15,9 @@ rbik.site {
 	# Serve static files
 	file_server
 
+	# Reverse proxy for API calls to the backend service
+	reverse_proxy /api/* http://backend:8000
+
 	# Handle Single Page Application (SPA) routing
 	# If a requested file isn't found, serve index.html
 	# so React Router can handle the route.

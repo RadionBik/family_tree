@@ -92,11 +92,9 @@ app = FastAPI(
 # Allow all origins for development purposes.
 # In production, restrict this to the actual frontend domain(s).
 origins = [
-    "*",  # Allows all origins
-    # Example for production:
-    # "http://localhost",
-    # "http://localhost:3000", # If your frontend runs on port 3000
-    # "https://your-frontend-domain.com",
+    # In production, this will be set to the specific frontend domain.
+    # In development, it can be a wildcard or a list of local origins.
+    os.getenv("CORS_ORIGIN", "*"),
 ]
 
 app.add_middleware(

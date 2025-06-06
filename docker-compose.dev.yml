@@ -7,27 +7,28 @@ services:
         HOST_UID: ${UID}
         HOST_GID: ${GID}
     env_file:
-      - .env
+      - .env_local
     environment:
       PYTHONPATH: "/app"
       DATABASE_URL: "sqlite:///db_data/app.db"
     volumes:
       - ./:/app
       - ./db_data:/db_data
-      - app_logs:/app/logs
+      - ./logs:/app/logs
 
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        CADDY_FILE: Caddyfile.dev
+      dockerfile: Dockerfile.dev
+    environment:
+      VITE_API_BASE_URL: /api
     ports:
-      - "443:443"
-      - "80:80"
+      - "5173:5173"
     volumes:
-      - ./frontend:/app/frontend
+      - ./frontend:/app
+      - node_modules:/app/node_modules
+    depends_on:
+      - backend
 
 volumes:
-  app_logs:
-    driver: local
+  node_modules:

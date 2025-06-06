@@ -16,5 +16,5 @@
 
 # Schedule: Minute Hour Day Month DayOfWeek
 # 0 8 * * * means at 08:00 every day
-0 8 * * * root python /app/scripts/send_birthday_notifications.py >> /app/logs/cron.log 2>&1
+0 8 * * * appuser /usr/local/bin/python /app/scripts/send_birthday_notifications.py >> /app/logs/cron.log 2>&1
 # Add a newline at the end of the file for cron

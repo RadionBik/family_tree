@@ -5,14 +5,16 @@ services:
       dockerfile: Dockerfile
     container_name: family_tree_backend
     env_file:
-      - .env # Load variables from .env file
+      - .env_prod # Load variables from .env file
     environment:
       # Define DATABASE_URL for SQLite, pointing inside the container volume
       DATABASE_URL: sqlite+aiosqlite:////db_data/app.db
       APP_ENV: ${APP_ENV:-production} # Default to production if not set
     volumes:
-      - app_logs:/app/logs # Mount named volume for logs
+      - ./logs:/app/logs # Mount local directory for logs
       - ./db_data:/db_data # Mount host directory for SQLite DB file
+      - ./scripts/ingest-cron:/etc/cron.d/ingest-cron # Mount the data ingestion cron job
+      - ./scripts/birthday-cron:/etc/cron.d/birthday-cron # Mount the birthday notification cron job
       # No code mounting for production
     # No database dependency needed for SQLite
     restart: unless-stopped
@@ -23,12 +25,18 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: family_tree_frontend
+    environment:
+      # This ensures the frontend knows how to reach the backend API.
+      VITE_API_BASE_URL: /api
     ports:
       - "443:443"
     depends_on:
       - backend # Optional, depends if frontend needs backend at build time (it doesn't here)
     restart: unless-stopped
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
 
 volumes:
-  app_logs:
-    driver: local
+  caddy_data:
+  caddy_config:

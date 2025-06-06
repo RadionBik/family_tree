@@ -6,6 +6,13 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: "0.0.0.0", // Listen on all network interfaces
-    port: 80, // Run on port 80
+    port: 5173, // Use the default Vite port
+    proxy: {
+      "/api": {
+        target: "http://backend:8000",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 });

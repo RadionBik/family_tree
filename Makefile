@@ -3,10 +3,6 @@
 # Use bash for better command handling
 SHELL := /bin/bash
 
-# Load environment variables from .env file if it exists and export them
--include .env
-export
-
 # Default target
 .DEFAULT_GOAL := help
 
@@ -71,16 +67,15 @@ build: docker-compose.yml Dockerfile frontend/Dockerfile
 	docker-compose build
 
 # Build and run with Docker Compose (Dev mode - HTTPS)
-run-docker: .env docker-compose.yml docker-compose.dev.yml Dockerfile frontend/Dockerfile frontend/Caddyfile.dev
+run-docker: .env_local docker-compose.yml docker-compose.dev.yml Dockerfile frontend/Dockerfile frontend/Caddyfile.dev
 	@echo "Stopping existing Docker containers..."
 	@docker-compose -f docker-compose.yml -f docker-compose.dev.yml down --remove-orphans || true
 	@echo "Building and running Docker containers for DEV (HTTPS)..."
 	@docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
-	@echo "Application should be running in DEV mode. Frontend at https://localhost, Backend API via frontend."
-	@echo "You may need to accept a self-signed certificate warning in your browser."
+	@echo "Application should be running in DEV mode. Frontend at http://localhost:5173, Backend API via frontend."
 
 # Build and run with Docker Compose (Prod mode - HTTP)
-run-docker-prod: .env docker-compose.yml Dockerfile frontend/Dockerfile frontend/Caddyfile
+run-docker-prod: .env_prod docker-compose.yml Dockerfile frontend/Dockerfile frontend/Caddyfile
 	@echo "Stopping existing Docker containers..."
 	@docker-compose down --remove-orphans || true
 	@echo "Building and running Docker containers for PROD (HTTP)..."
