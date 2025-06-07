@@ -17,7 +17,7 @@ WORKDIR /app
 # Install system dependencies
 # Install cron and ensure log directory exists
 # gosu is used to drop privileges in the entrypoint script
-RUN apt-get update && apt-get install -y --no-install-recommends cron procps curl gosu && \
+RUN apt-get update && apt-get install -y --no-install-recommends procps curl && \
     rm -rf /var/lib/apt/lists/* && \
     mkdir -p /app/logs && \
     touch /app/logs/cron.log && \
@@ -38,20 +38,15 @@ RUN if getent group ${HOST_GID:-1000} >/dev/null; then \
 # Install Python dependencies
 # Copy only requirements first to leverage Docker cache
 COPY requirements.txt requirements.txt
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code into the container
 # Copy application code BEFORE changing ownership
 COPY . .
 
-# Copy crontab file and set permissions (still done as root)
-COPY scripts/birthday-cron /etc/cron.d/birthday-cron
-RUN chmod 0644 /etc/cron.d/birthday-cron && \
-    crontab /etc/cron.d/birthday-cron # Apply the crontab
-
 # Change ownership of the app directory to the non-root user
-RUN chown -R appuser:appgroup /app
+RUN mkdir -p /db_data && chown -R appuser:appgroup /app /db_data
 # Note: We don't switch USER here; entrypoint will use gosu
 
 # This section is removed as it's incorporated above

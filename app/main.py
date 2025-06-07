@@ -63,6 +63,9 @@ if app_config.DEBUG:
     stream_handler.setLevel(logging.DEBUG)
     file_handler.setLevel(logging.DEBUG)
 
+# Set apscheduler logger to DEBUG for more verbose output
+logging.getLogger("apscheduler").setLevel(logging.DEBUG)
+
 # --- Check Production Environment Variables ---
 # Call the check function after logger and app_config are initialized
 check_production_vars(app_config, logger)
@@ -78,7 +81,9 @@ async def lifespan(app: FastAPI):
     _ = models  # Reference models to prevent linters removing the import
     await init_models()
     logger.info("Database models initialized.")
+
     yield
+
     # Shutdown
     logger.info("Application shutdown: Disposing database engine...")
     if async_engine:

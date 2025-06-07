@@ -7,19 +7,23 @@ SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
 # Define phony targets to avoid conflicts with filenames
-.PHONY: help setup-local run-local-backend run-local-frontend run-local build run-docker run-docker-prod docker-seed lint clean-pycache clean-node clean
+.PHONY: help setup-local run-local-backend run-local-frontend run-local build run-docker run-docker-prod docker-seed-dev docker-seed-prod docker-migrate-dev docker-migrate-prod lint clean-pycache clean-node clean
 
 # Help target to display available commands
 help:
 	@echo "Available commands:"
 	@echo "  setup-local          - Set up local development environment (Python venv, pip install, npm install)"
+	@echo "  migrate              - Run database migrations (local venv)"
+	@echo "  docker-migrate-dev   - Run database migrations in the DEV Docker container"
+	@echo "  docker-migrate-prod  - Run database migrations in the PROD Docker container"
 	@echo "  run-local-backend    - Run the backend FastAPI server locally (uvicorn)"
 	@echo "  run-local-frontend   - Run the frontend React dev server locally (vite)"
 	@echo "  run-local            - Prints commands to run backend and frontend locally (in separate terminals)"
 	@echo "  build                - Build Docker images using docker-compose"
 	@echo "  run-docker           - Build and run the application using Docker Compose (DEV mode - HTTPS on https://localhost)"
 	@echo "  run-docker-prod      - Build and run the application using Docker Compose (PROD mode - HTTP on http://localhost)"
-	@echo "  docker-seed          - Run the database seed script inside the Docker container"
+	@echo "  docker-seed-dev      - Run the database seed script in the DEV Docker container"
+	@echo "  docker-seed-prod     - Run the database seed script in the PROD Docker container"
 	@echo "  lint                 - Run pre-commit hooks (linting and formatting)"
 	@echo "  clean-pycache        - Remove Python cache files"
 	@echo "  clean-node           - Remove frontend node_modules"
@@ -83,10 +87,25 @@ run-docker-prod: .env_prod docker-compose.yml Dockerfile frontend/Dockerfile fro
 	@docker-compose --env-file $(ENV_FILE) up --build -d
 	@echo "Application should be running in PROD mode. Frontend at http://localhost, Backend API via frontend."
 
-# Seed database in Docker
-docker-seed:
-	@echo "Running database seed script in Docker container..."
-	@docker-compose exec backend python -m scripts.seed_db
+# Seed database in Docker (Dev)
+docker-seed-dev:
+	@echo "Running database seed script in DEV Docker container..."
+	@docker-compose --env-file .env_local -f docker-compose.yml -f docker-compose.dev.yml exec backend python -m scripts.seed_db
+
+# Seed database in Docker (Prod)
+docker-seed-prod:
+	@echo "Running database seed script in PROD Docker container..."
+	@docker-compose --env-file .env_prod exec backend python -m scripts.seed_db
+
+# Run database migrations in Docker (Dev)
+docker-migrate-dev:
+	@echo "Running database migrations in DEV Docker container..."
+	@docker-compose --env-file .env_local -f docker-compose.yml -f docker-compose.dev.yml exec backend alembic upgrade head
+
+# Run database migrations in Docker (Prod)
+docker-migrate-prod:
+	@echo "Running database migrations in PROD Docker container..."
+	@docker-compose --env-file .env_prod exec backend alembic upgrade head
 
 # Lint code
 lint: venv/bin/activate frontend/node_modules

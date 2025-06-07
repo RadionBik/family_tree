@@ -3,6 +3,7 @@ import io
 import logging
 import os
 from datetime import date, datetime
+from pathlib import Path
 
 from dotenv import load_dotenv
 from google.oauth2.service_account import Credentials
@@ -48,15 +49,23 @@ def parse_sheet_date(date_str: str) -> date | None:
 def get_family_data_from_sheet():
     """Download Google Sheet as CSV using service account credentials"""
     try:
-        SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE")
+        service_account_file_name = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE")
         SPREADSHEET_ID = os.getenv("GOOGLE_SPREADSHEET_ID")
         SHEET_NAME = os.getenv("GOOGLE_SHEET_NAME", "Family Data")
 
-        if not SERVICE_ACCOUNT_FILE or not SPREADSHEET_ID:
+        if not service_account_file_name or not SPREADSHEET_ID:
             logger.error("Google Sheets credentials not configured")
             return None
 
-        creds = Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE)
+        # Construct an absolute path to the credentials file from the project root
+        project_root = Path(__file__).parent.parent
+        service_account_path = project_root / service_account_file_name
+
+        if not service_account_path.is_file():
+            logger.error(f"Service account file not found at: {service_account_path}")
+            return None
+
+        creds = Credentials.from_service_account_file(service_account_path)
         scoped_creds = creds.with_scopes(
             [
                 "https://www.googleapis.com/auth/drive.readonly",

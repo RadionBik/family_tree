@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-import sys
 
 # Ensure the project root is in PYTHONPATH when running this script
 # Example: PYTHONPATH=$PYTHONPATH:/path/to/family_tree python scripts/send_birthday_notifications.py
@@ -117,26 +116,6 @@ async def run_notifications():
 
 
 if __name__ == "__main__":
-    # Ensure environment variables are loaded if using python-dotenv
-    # from dotenv import load_dotenv
-    # load_dotenv() # Load .env file from project root
-
-    # Check for necessary email config
-    required_env_vars = ["MAIL_SERVER", "MAIL_DEFAULT_SENDER"]
-    missing_vars = [var for var in required_env_vars if not os.getenv(var)]
-    if missing_vars:
-        logger.error(
-            f"Missing required environment variables for email: {', '.join(missing_vars)}"
-        )
-        logger.error("Please set them in your environment or .env file.")
-        sys.exit(1)
-    # Optional check for credentials if not using an open relay
-    if (
-        not os.getenv("MAIL_SERVER") == "localhost"
-    ):  # Example check if not using local relay
-        if not os.getenv("MAIL_USERNAME") or not os.getenv("MAIL_PASSWORD"):
-            logger.warning(
-                "MAIL_USERNAME or MAIL_PASSWORD not set. Email sending might fail if authentication is required."
-            )
-
+    # This script can now be run directly for testing, but is intended to be called by the scheduler.
+    # The scheduler will ensure the environment is configured correctly.
     asyncio.run(run_notifications())

@@ -1,2 +1,0 @@
-# Run family data ingestion every hour
-*/15 * * * * appuser /usr/local/bin/python /app/scripts/ingest_family_data.py >> /app/logs/ingestion.log 2>&1

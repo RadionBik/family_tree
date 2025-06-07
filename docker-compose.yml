@@ -16,12 +16,31 @@ services:
     volumes:
       - ./logs:/app/logs # Mount local directory for logs
       - ./db_data:/db_data # Mount host directory for SQLite DB file
-      - ./scripts/ingest-cron:/etc/cron.d/ingest-cron # Mount the data ingestion cron job
-      - ./scripts/birthday-cron:/etc/cron.d/birthday-cron # Mount the birthday notification cron job
       # No code mounting for production
     # No database dependency needed for SQLite
     restart: unless-stopped
     # Healthcheck is defined in the backend Dockerfile
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        HOST_UID: ${UID}
+        HOST_GID: ${GID}
+    container_name: family_tree_scheduler
+    command: python run_scheduler.py
+    env_file:
+      - .env_prod
+    environment:
+      DATABASE_URL: sqlite+aiosqlite:////db_data/app.db
+      APP_ENV: ${APP_ENV:-production}
+    volumes:
+      - ./logs:/app/logs
+      - ./db_data:/db_data
+    depends_on:
+      - backend
+    restart: unless-stopped
 
   frontend:
     build:

@@ -9,7 +9,7 @@ from config import config  # Import the config dictionary
 logger = logging.getLogger(__name__)
 
 # Determine config environment
-config_name = os.getenv("APP_ENV", "default")
+config_name = os.getenv("APP_ENV", "development")
 app_config = config[config_name]
 
 # --- Database URL Configuration ---
