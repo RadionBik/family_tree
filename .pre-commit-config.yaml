@@ -1,0 +1,40 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0 # Use the latest version
+    hooks:
+    -   id: trailing-whitespace
+        exclude: ^migrations/versions/
+    -   id: end-of-file-fixer
+        exclude: ^migrations/versions/
+    -   id: check-yaml
+    -   id: check-added-large-files
+    -   id: check-merge-conflict
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    # Check https://github.com/astral-sh/ruff-pre-commit for the latest rev
+    rev: v0.11.13
+    hooks:
+    -   id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        exclude: ^migrations/versions/
+    -   id: ruff-format
+        exclude: ^migrations/versions/
+
+-   repo: local
+    hooks:
+    -   id: eslint-prettier
+        name: eslint-prettier
+        entry: eslint --config frontend/eslint.config.cjs
+        language: node
+        types: [javascript]
+        files: ^frontend/.*\.(js|jsx)$
+        additional_dependencies: [
+            "@eslint/js@^9.22.0",
+            "eslint@^9.26.0",
+            "eslint-config-prettier@^10.1.2",
+            "eslint-plugin-react@^7.35.0",
+            "eslint-plugin-react-hooks@^5.2.0",
+            "eslint-plugin-react-refresh@^0.4.19",
+            "globals@^16.0.0"
+        ]

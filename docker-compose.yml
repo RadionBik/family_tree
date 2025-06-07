@@ -1,0 +1,64 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        HOST_UID: ${UID}
+        HOST_GID: ${GID}
+    container_name: family_tree_backend
+    env_file:
+      - .env_prod # Load variables from .env file
+    environment:
+      # Define DATABASE_URL for SQLite, pointing inside the container volume
+      DATABASE_URL: sqlite+aiosqlite:////db_data/app.db
+      APP_ENV: ${APP_ENV:-production} # Default to production if not set
+    volumes:
+      - ./logs:/app/logs # Mount local directory for logs
+      - ./db_data:/db_data # Mount host directory for SQLite DB file
+      # No code mounting for production
+    # No database dependency needed for SQLite
+    restart: unless-stopped
+    # Healthcheck is defined in the backend Dockerfile
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        HOST_UID: ${UID}
+        HOST_GID: ${GID}
+    container_name: family_tree_scheduler
+    command: python run_scheduler.py
+    env_file:
+      - .env_prod
+    environment:
+      DATABASE_URL: sqlite+aiosqlite:////db_data/app.db
+      APP_ENV: ${APP_ENV:-production}
+    volumes:
+      - ./logs:/app/logs
+      - ./db_data:/db_data
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: family_tree_frontend
+    environment:
+      # This ensures the frontend knows how to reach the backend API.
+      VITE_API_BASE_URL: /api
+    ports:
+      - "443:443"
+    depends_on:
+      - backend # Optional, depends if frontend needs backend at build time (it doesn't here)
+    restart: unless-stopped
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

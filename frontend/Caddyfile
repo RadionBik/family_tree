@@ -1,0 +1,37 @@
+{
+	# Tell Caddy to order directives in a specific way for clarity
+	order encode before respond
+}
+
+# This will be the address Caddy listens on inside the container.
+# Your docker-compose.yml maps host port 80 to this.
+rbik.site {
+	# Enable Brotli and Gzip compression
+	encode gzip
+	# Set the root directory for your static files
+	# This should match where you copy your built assets in the Dockerfile
+	root * /srv
+
+	# Serve static files
+	file_server
+
+	# Reverse proxy for API calls to the backend service
+	reverse_proxy /api/* http://backend:8000
+
+	# Handle Single Page Application (SPA) routing
+	# If a requested file isn't found, serve index.html
+	# so React Router can handle the route.
+	try_files {path} {path}/ /index.html
+
+	# Optional: Add some basic security headers
+	header {
+		# Prevent clickjacking
+		X-Frame-Options "SAMEORIGIN"
+		# Prevent MIME-type sniffing
+		X-Content-Type-Options "nosniff"
+		# Enable XSS protection (though modern browsers often handle this)
+		# X-XSS-Protection "1; mode=block"
+		# Control referrer policy
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+}

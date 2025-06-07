@@ -1,0 +1,181 @@
+{
+  "header": {
+    "title": "Семейное Древо",
+    "logoutButton": "Выйти"
+  },
+  "footer": {
+    "copyright": "© {{year}} Семейное Древо. Все права защищены."
+  },
+  "birthdayTimeline": {
+    "title": "Лента дней рождений",
+    "noBirthdays": "Нет предстоящих дней рождений.",
+    "turnsAge": "Исполняется {{age}}",
+    "loading": "Загрузка дней рождений...",
+    "error": "Не удалось загрузить дни рождения. Пожалуйста, попробуйте позже."
+  },
+  "common": {
+    "notSpecified": "Не указано",
+    "unknown": "Неизвестно",
+    "delete": "Удалить",
+    "deleting": "Удаление...",
+    "adding": "Добавление...",
+    "loading": "Загрузка...",
+    "noData": "Нет данных"
+  },
+  "familyTree": {
+    "title": "Наша семья",
+    "placeholder": "[Визуализация семейного древа будет здесь]",
+    "requiresIntegration": "(Требуется интеграция библиотеки)",
+    "detailsTitle": "Детали",
+    "edgeLegendTitle": "Типы связей"
+  },
+  "adminLogin": {
+    "title": "Вход для администратора",
+    "usernameLabel": "Логин админа:",
+    "passwordLabel": "Пароль:",
+    "loginButton": "Войти",
+    "loggingInButton": "Вход...",
+    "alertNotImplemented": "Логика входа администратора еще не реализована.",
+    "successMessage": "Вход выполнен успешно!",
+    "errorGeneric": "Ошибка входа. Пожалуйста, попробуйте позже.",
+    "errorInvalid": "Неверный логин или пароль.",
+    "errorNetwork": "Ошибка сети. Проверьте подключение и попробуйте снова."
+  },
+  "subscriptionForm": {
+    "title": "Тут можно подписаться на уведомления о днях рождениях",
+    "nameLabel": "Ваше имя:",
+    "emailLabel": "Электронный ящик:",
+    "subscribeButton": "Подписаться",
+    "subscribingButton": "Подписка...",
+    "alertNotImplemented": "Логика подписки еще не реализована.",
+    "successDefault": "Подписка оформлена успешно!",
+    "errorGeneric": "Произошла ошибка. Пожалуйста, попробуйте позже.",
+    "errorDuplicate": "Этот email уже подписан.",
+    "errorNetwork": "Ошибка сети. Проверьте подключение и попробуйте снова."
+  },
+  "name": "Имя",
+  "birthDate": "Дата рождения",
+  "deathDate": "Дата смерти",
+  "genderLabel": "Пол",
+  "gender": {
+    "male": "Мужской",
+    "female": "Женский",
+    "other": "Другой"
+  },
+  "ageLabel": "Возраст",
+  "notes": "Заметки",
+  "close": "Закрыть",
+  "loading": "Загрузка",
+  "relationType": {
+    "parent-child": "Родитель-Ребенок",
+    "spouse": "Супруг(а)",
+    "parent": "Родитель",
+    "child": "Ребенок"
+  },
+  "relationDesc": {
+    "isParentOf": "Родитель для {{name}}",
+    "isChildOf": "Ребенок для {{name}}",
+    "isSpouseOf": "Супруг(а) для {{name}}",
+    "isRelatedTo": "Связан(а) с {{name}}"
+  },
+  "adminLayout": {
+    "loading": "Загрузка панели администратора...",
+    "title": "Админ-панель Семейного Древа",
+    "navMembers": "Управление членами семьи",
+    "logoutButton": "Выйти",
+    "footerText": "Панель администратора Семейного Древа"
+  },
+  "adminDashboard": {
+    "title": "Панель администратора",
+    "welcome": "Добро пожаловать в панель администратора. Выберите опцию из навигации."
+  },
+  "adminMemberList": {
+    "title": "Управление членами семьи",
+    "addMemberButton": "Добавить нового члена семьи",
+    "tableHeaderName": "Имя",
+    "tableHeaderBirthDate": "Дата рождения",
+    "tableHeaderActions": "Действия",
+    "editButton": "Редакт.",
+    "deleteButton": "Удалить",
+    "noMembers": "Члены семьи не найдены.",
+    "errorFetch": "Не удалось загрузить список членов семьи.",
+    "confirmDelete": "Вы уверены, что хотите удалить {{name}}? Это действие нельзя отменить.",
+    "deleteSuccess": "{{name}} успешно удален(а).",
+    "errorDelete": "Не удалось удалить {{name}}.",
+    "loading": "Загрузка членов семьи...",
+    "searchPlaceholder": "Поиск по имени...",
+    "selectAllTooltip": "Выбрать всех на этой странице",
+    "deleteSelectedButton": "Удалить выбранные ({{count}})",
+    "errorNoSelection": "Пожалуйста, выберите членов семьи для удаления.",
+    "confirmBatchDelete": "Вы уверены, что хотите удалить {{count}} выбранных членов семьи? Это действие нельзя отменить.",
+    "batchDeleteSuccess": "Успешно удалено {{count}} членов семьи.",
+    "errorBatchDelete": "Не удалось удалить выбранных членов семьи."
+  },
+  "adminMemberForm": {
+    "errorFetch": "Не удалось загрузить данные члена семьи.",
+    "updateSuccess": "Данные члена семьи успешно обновлены!",
+    "addSuccess": "Новый член семьи успешно добавлен!",
+    "errorGeneric": "Не удалось сохранить данные. Пожалуйста, попробуйте позже.",
+    "loadingData": "Загрузка данных члена семьи...",
+    "editTitle": "Редактировать члена семьи",
+    "addTitle": "Добавить нового члена семьи",
+    "lastNameLabel": "Фамилия",
+    "firstNameLabel": "Имя",
+    "middleNameLabel": "Отчество",
+    "genderLabel": "Пол",
+    "selectGender": "-- Выберите пол --",
+    "genderMale": "Мужской",
+    "genderFemale": "Женский",
+    "genderOther": "Другой",
+    "birthDateLabel": "Дата рождения",
+    "deathDateLabel": "Дата смерти (если применимо)",
+    "locationLabel": "Местоположение (город/страна)",
+    "bioLabel": "Биография",
+    "savingButton": "Сохранение...",
+    "updateButton": "Обновить",
+    "addButton": "Добавить",
+    "cancelButton": "Отмена",
+    "lastNameTooltip": "Введите фамилию члена семьи",
+    "firstNameTooltip": "Введите имя члена семьи",
+    "middleNameTooltip": "Введите отчество (если есть)",
+    "genderTooltip": "Выберите пол члена семьи",
+    "birthDateTooltip": "Выберите дату рождения",
+    "deathDateTooltip": "Выберите дату смерти, если применимо",
+    "locationTooltip": "Укажите город или страну проживания/рождения",
+    "bioTooltip": "Введите краткую биографию или заметки"
+  },
+  "relationshipManager": {
+    "title": "Управление связями",
+    "errorDelete": "Не удалось удалить связь.",
+    "errorFetchMembers": "Не удалось загрузить список членов семьи.",
+    "errorSelectMember": "Пожалуйста, выберите члена семьи для связи.",
+    "createSuccess": "Связь успешно добавлена.",
+    "errorCreate": "Не удалось добавить связь.",
+    "deleteSuccess": "Связь успешно удалена.",
+    "existingTitle": "Существующие связи:",
+    "noExisting": "Связи еще не определены.",
+    "addTitle": "Добавить новую связь",
+    "relationTypeLabel": "Тип связи:",
+    "relatedMemberLabel": "Связанный член семьи:",
+    "selectMember": "-- Выберите члена семьи --",
+    "addButton": "Добавить связь",
+    "confirmDeleteRelation": "Вы уверены, что хотите удалить эту связь ({{type}}) с {{name}}?"
+  },
+  "pagination": {
+    "previous": "Назад",
+    "next": "Вперед",
+    "pageInfo": "Стр. {{currentPage}} из {{totalPages}}"
+  },
+  "userLogin": {
+    "title": "Войдите для просмотра сайта",
+    "usernameLabel": "Имя пользователя",
+    "passwordLabel": "Пароль",
+    "loginButton": "Войти",
+    "loggingInButton": "Вход...",
+    "successMessage": "Вход выполнен успешно! Перенаправление...",
+    "errorGeneric": "Ошибка входа. Проверьте учетные данные и попробуйте снова.",
+    "errorInvalid": "Неверное имя пользователя или пароль.",
+    "errorNetwork": "Ошибка сети. Проверьте подключение.",
+    "errorTokenMissing": "Вход успешен, но токен не получен."
+  }
+}

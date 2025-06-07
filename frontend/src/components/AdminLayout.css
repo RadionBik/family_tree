@@ -1,0 +1,136 @@
+.admin-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f4f7f6; /* Light background for the admin area */
+}
+
+.admin-header {
+  background-color: #343a40; /* Dark header */
+  color: #ffffff;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.admin-header nav {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.admin-header nav a {
+  color: #ffffff;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.admin-header nav a:hover,
+.admin-header nav a.active { /* Add active class styling if using NavLink */
+  background-color: #495057;
+}
+
+.admin-header nav button {
+  background-color: #dc3545; /* Red logout button */
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease;
+}
+
+.admin-header nav button:hover {
+  background-color: #c82333;
+}
+
+.admin-content {
+  flex-grow: 1;
+  padding: 2rem;
+  background-color: #ffffff; /* White content area */
+  margin: 1rem; /* Add some margin around the content */
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.admin-footer {
+  background-color: #e9ecef; /* Light footer */
+  color: #495057;
+  text-align: center;
+  padding: 1rem;
+  margin-top: auto; /* Pushes footer to the bottom */
+  font-size: 0.9rem;
+}
+
+/* Basic styles for forms within admin panel */
+.admin-content .form-group {
+  margin-bottom: 1rem;
+}
+
+.admin-content label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+}
+
+.admin-content input[type="text"],
+.admin-content input[type="password"],
+.admin-content input[type="email"],
+.admin-content input[type="date"],
+.admin-content textarea,
+.admin-content select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  box-sizing: border-box; /* Include padding and border in element's total width and height */
+}
+
+.admin-content button[type="submit"] {
+  background-color: #007bff;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.admin-content button[type="submit"]:hover {
+  background-color: #0056b3;
+}
+
+.admin-content button[type="submit"]:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+/* Message styles (reuse from AdminLogin or create specific ones) */
+.admin-content .message {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.admin-content .message-success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.admin-content .message-error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}

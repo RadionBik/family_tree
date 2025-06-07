@@ -1,0 +1,10 @@
+/*
+  All global styles previously here are now handled by MUI's CssBaseline
+  component (applied in main.jsx) and the theme configuration (theme.js).
+  Individual component styling is done using MUI components and the `sx` prop
+  or `styled` utility.
+
+  This file is kept primarily because it's imported in main.jsx,
+  but its content is no longer needed for the MUI-based public site.
+  Admin-specific global styles (if any) should go elsewhere or be scoped properly.
+*/

@@ -1,0 +1,180 @@
+/* Basic Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: sans-serif;
+  line-height: 1.6;
+  background-color: #f4f4f4;
+  color: #333;
+}
+
+/* Layout Container - Handled by MUI Box in Layout.jsx */
+
+/* Header Styles (Public) - Handled by MUI AppBar in Header.jsx */
+
+/* Main Content Area - Handled by MUI Container in Layout.jsx */
+
+/* Footer Styles - Handled by MUI Box in Footer.jsx */
+
+/* Grid for HomePage sections (basic example) */
+.home-page-grid {
+  /* display: grid; */ /* Removed grid layout */
+  /* grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); */
+  /* gap: 1rem; */ /* Gap is irrelevant without grid */
+}
+
+.home-page-grid section {
+  background: #fff;
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  overflow: auto; /* Allow scrolling if content overflows */
+}
+
+.home-page-grid h2 {
+  margin-bottom: 0.5rem;
+  color: #555;
+}
+
+/* Add more specific styles as needed */
+
+/* Birthday Timeline Styles - Handled by MUI components in BirthdayTimeline.jsx */
+
+/* Family Tree Placeholder Styles - Likely unused now, handled by MUI in FamilyTree.jsx */
+
+/* Form Styles */
+.admin-login form { /* Keep admin login form styles separate */
+  margin-top: 1rem;
+}
+
+/* Subscription Form Specific Styles - Handled by MUI components in SubscriptionForm.jsx */
+/* Note: General .form-group styles might still be used by AdminLogin, kept for now */
+.form-group {
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-weight: bold;
+  color: #444;
+}
+
+/* Keep input styles for now as AdminLogin might use them */
+.form-group input[type="text"],
+.form-group input[type="password"],
+.form-group input[type="email"] {
+  width: 100%;
+  padding: 0.7rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+/* General button styles - Keep for now, might be used by AdminLogin or other non-MUI buttons */
+button[type="submit"] {
+  display: inline-block;
+  background-color: #007bff;
+  color: white;
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+button[type="submit"]:hover {
+  background-color: #0056b3;
+}
+
+
+/* Header Styling for Admin Login */
+.header {
+  display: flex; /* Use flexbox for layout */
+  justify-content: space-between; /* Pushes title left and login right */
+  align-items: center; /* Vertically aligns items in the middle */
+  padding: 1rem 2rem; /* Adjust padding as needed */
+  position: relative; /* Needed if login dropdowns are used later */
+}
+
+.header h1 {
+  margin: 0; /* Remove default margin */
+}
+
+.header-admin-login {
+  /* This container now holds the AdminLogin component */
+  /* No specific styles needed here if space-between works */
+}
+
+/* Optional: Adjust AdminLogin styles for header context */
+.header-admin-login .admin-login {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: white;
+  color: #333; /* Ensure text inside is dark on white background */
+  display: flex; /* Arrange form elements inline */
+  align-items: center;
+  gap: 0.5rem; /* Space between elements */
+}
+
+.header-admin-login .admin-login h2 {
+ display: none; /* Hide the title in the header view */
+}
+
+.header-admin-login .admin-login form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.header-admin-login .admin-login .form-group {
+  margin-bottom: 0; /* Remove bottom margin */
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.header-admin-login .admin-login label {
+  margin-bottom: 0; /* Remove bottom margin */
+  font-size: 0.9rem;
+  white-space: nowrap; /* Prevent wrapping */
+}
+
+.header-admin-login .admin-login input {
+  width: 120px; /* Adjust width */
+  padding: 0.3rem;
+  font-size: 0.9rem;
+}
+
+.header-admin-login .admin-login button {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+  margin-top: 0; /* Remove top margin */
+  white-space: nowrap;
+}
+
+/* Graph Tooltip Styling */
+.graph-tooltip {
+  background-color: rgba(0, 0, 0, 0.75); /* Semi-transparent black background */
+  color: white; /* White text */
+  padding: 8px 12px; /* Padding around the text */
+  border-radius: 4px; /* Rounded corners */
+  font-size: 12px; /* Font size */
+  pointer-events: none; /* Prevent tooltip from interfering with mouse events on the graph */
+  white-space: nowrap; /* Keep content on one line unless using <br/> */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Subtle shadow */
+  transition: opacity 0.2s ease-in-out; /* Smooth fade (optional) */
+}
+
+.graph-tooltip strong {
+  font-weight: bold;
+  display: block; /* Make title take its own line */
+  margin-bottom: 4px; /* Space below title */
+}

@@ -1,0 +1,53 @@
+<context>
+# Overview
+
+My personal web-site for all my family members and relatives that displays information about connections (how we are related to each other as a graph), reminds about birthdays of the living ones.
+
+# Core Features
+
+1. Visualise the family tree as a graph. It helps users to navigate the family tree, with nodes being family members, displayed as a fullname (and optional photo) and showing more detailed info about
+their DOB, age, date of death (if deceased), city, social media handles (VK, instagram) upon click
+2. Send reminders about birthdays. A user can choose to subscribe his email to receive notifications about today's birthday of the alive at 8-00 UTC.
+3. Admin panel. Upon login to the panel one can edit the tree by adding / deleting / modifying family members and setting relations between them.
+
+# User Experience
+
+User-facing texts have to be in Russian.
+
+A guest user opens the web-site, and sees the timeline with upcoming birthdays for next 30 days, and expanded family tree just below it (starting on top with the oldest member).
+
+There have to be a login field for the admin, and a field for entering your email along with a subscribing button for birthday notifications.
+
+</context>
+<PRD>
+# Technical Architecture
+
+The back-end has to be implemented in python whenever possible, without preferences for front-end.
+
+the database should be sqlite, with the following tables:
+- FamilyMember: fullname, date_of_birth, date_of_death (optional), place_of_living, place_of_birth, vk_handle, instagram_handle, email
+- Relations: id_of_parent_member, id_of_another_member, relation_type (`родитель`, `супруг`)
+- SubscribedEmail: email
+
+Admin users will require a table containing their credentials for login.
+
+The resulting service should be available as a docker image (or docker-compose) available for local deployment.
+
+# Development Roadmap
+
+Stages:
+1. a main web-page is available with a dummy family tree and birthday timelines having all guest-user features
+2. Admin panel is supported and the family tree can be actually edited
+3. Email notifications job is implemented
+
+# Logical Dependency Chain
+stage 1 is a foundation.
+stage 2 and 3 do not depend on each other.
+
+
+# Risks and Mitigations
+N/A
+
+# Appendix
+N/A
+</PRD>

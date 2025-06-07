@@ -1,0 +1,26 @@
+{
+	# Tell Caddy to order directives in a specific way for clarity
+	order encode before respond
+}
+
+# This will be the address Caddy listens on inside the container.
+# Your docker-compose.yml will map host port 443 (for HTTPS) and 80 (for HTTP->HTTPS redirect) to this.
+localhost {
+	# Reverse proxy for the Vite development server
+	reverse_proxy http://localhost:5173
+
+	# Reverse proxy for API calls to the backend service
+	reverse_proxy /api/* http://backend:8000
+
+	# Optional: Add some basic security headers
+	header {
+		# Prevent clickjacking
+		X-Frame-Options "SAMEORIGIN"
+		# Prevent MIME-type sniffing
+		X-Content-Type-Options "nosniff"
+		# Enable XSS protection (though modern browsers often handle this)
+		# X-XSS-Protection "1; mode=block"
+		# Control referrer policy
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+}
