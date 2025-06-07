@@ -42,7 +42,6 @@ async def add_subscription(
     email_lower = subscription_data.email.lower()
     logger.info(f"Attempting to add subscription for email: {email_lower}")
 
-    # Check if email already exists and is active
     stmt_check = select(SubscribedEmail).where(
         (SubscribedEmail.email == email_lower) & SubscribedEmail.is_active
     )
@@ -53,7 +52,6 @@ async def add_subscription(
         logger.warning(f"Email {email_lower} is already actively subscribed.")
         raise EmailAlreadyExistsError(f"Email {email_lower} is already subscribed.")
 
-    # Check if email exists but is inactive - reactivate it
     stmt_inactive_check = select(SubscribedEmail).where(
         (SubscribedEmail.email == email_lower) & (not SubscribedEmail.is_active)
     )
@@ -63,7 +61,7 @@ async def add_subscription(
     if inactive_subscription:
         logger.info(f"Reactivating existing inactive subscription for {email_lower}.")
         inactive_subscription.is_active = True
-        inactive_subscription.last_updated = func.utcnow()  # Update timestamp if needed
+        inactive_subscription.last_updated = func.utcnow()
         try:
             await db.commit()
             await db.refresh(inactive_subscription)
@@ -79,37 +77,32 @@ async def add_subscription(
                 f"Failed to reactivate subscription for {email_lower}."
             ) from e
 
-    # If not found or inactive, create a new entry
     logger.info(f"Creating new subscription entry for {email_lower}.")
     new_subscription = SubscribedEmail(
         email=email_lower,
         is_active=True,
-        # subscription_date and last_updated have defaults
     )
     db.add(new_subscription)
 
     try:
-        await db.commit()  # Commit the transaction
-        await db.refresh(new_subscription)  # Refresh to get ID and default values
+        await db.commit()
+        await db.refresh(new_subscription)
         logger.info(
             f"Successfully added new subscription for {email_lower} with ID {new_subscription.id}."
         )
         return new_subscription
-    except (
-        IntegrityError
-    ) as e:  # Catch potential race conditions if unique constraint fails
+    except IntegrityError as e:
         await db.rollback()
         logger.warning(
             f"Integrity error (likely duplicate email race condition) for {email_lower}: {e}"
         )
-        # Check again if it exists now due to race condition
         result_check_again = await db.execute(stmt_check)
         existing_now = result_check_again.scalar_one_or_none()
         if existing_now:
             raise EmailAlreadyExistsError(
                 f"Email {email_lower} was already subscribed (race condition)."
             )
-        else:  # Should not happen often if initial check passed, but handle defensively
+        else:
             raise SubscriptionError(
                 f"Integrity error creating subscription for {email_lower}."
             ) from e
@@ -121,6 +114,3 @@ async def add_subscription(
         raise SubscriptionError(
             f"Failed to create subscription for {email_lower}."
         ) from e
-
-
-# Add functions for unsubscribe, get subscription status etc. later if needed

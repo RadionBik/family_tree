@@ -1,136 +1,127 @@
 import React, { useEffect, useRef, useMemo } from "react";
-import { useTranslation } from "react-i18next"; // Import useTranslation
-import CytoscapeComponent from "react-cytoscapejs"; // Keep for normalizeElements
+import { useTranslation } from "react-i18next";
+import CytoscapeComponent from "react-cytoscapejs";
 import cytoscape from "cytoscape";
-import elk from "cytoscape-elk"; // Keep elk registered
+import elk from "cytoscape-elk";
 import ELK from "elkjs/lib/elk.bundled.js";
-// import dagre from 'cytoscape-dagre'; // Remove dagre import
 import $ from "jquery";
 import qtip from "cytoscape-qtip";
 import "qtip2/dist/jquery.qtip.min.css";
 
-// Register extensions globally
 cytoscape.use(elk);
-// cytoscape.use(dagre); // Remove dagre registration
 qtip(cytoscape, $);
 
 const FamilyTreeGraph = ({ elements, onNodeClick, selectedNodeId }) => {
-  const { t } = useTranslation(); // Initialize useTranslation
-  // Add selectedNodeId prop
-  const containerRef = useRef(null); // Ref for the container div
-  const cyRef = useRef(null); // Ref to store the cy instance
-  const isMounted = useRef(true); // Ref to track mount status
+  const { t } = useTranslation();
+  const containerRef = useRef(null);
+  const cyRef = useRef(null);
+  const isMounted = useRef(true);
 
-  // Enhanced stylesheet (memoized)
   const stylesheet = useMemo(
     () => [
       {
-        selector: "node", // Default node style
+        selector: "node",
         style: {
-          "background-color": "#aaa", // Neutral default color
+          "background-color": "#aaa",
           label: "data(label)",
-          width: "label", // Adjust width based on label
-          height: "label", // Adjust height based on label
+          width: "label",
+          height: "label",
           padding: "10px",
-          shape: "round-rectangle", // Default shape
+          shape: "round-rectangle",
           "text-valign": "center",
           "text-halign": "center",
-          color: "#fff", // Label color
+          color: "#fff",
           "text-outline-width": 2,
-          "text-outline-color": "#888", // Outline for better readability
+          "text-outline-color": "#888",
           "font-size": "12px",
         },
       },
       {
-        selector: 'node[gender="male"]', // Style for male nodes
+        selector: 'node[gender="male"]',
         style: {
-          "background-color": "#6CBEEB", // Blueish color
-          shape: "rectangle", // Different shape
+          "background-color": "#6CBEEB",
+          shape: "rectangle",
         },
       },
       {
-        selector: 'node[gender="female"]', // Style for female nodes
+        selector: 'node[gender="female"]',
         style: {
-          "background-color": "#F7A6C4", // Pinkish color
-          shape: "ellipse", // Different shape
+          "background-color": "#F7A6C4",
+          shape: "ellipse",
         },
       },
       {
-        selector: "edge", // Default edge style
+        selector: "edge",
         style: {
           width: 2,
-          "line-color": "#ccc", // Default color
-          "curve-style": "bezier", // Smoother curves
-          // 'label': 'data(label)', // Removed: Display the edge label
-          "font-size": "10px", // Smaller font for edge labels (kept for potential future use, but label removed)
-          color: "#555", // Label color (kept for potential future use)
-          "text-rotation": "autorotate", // Kept for potential future use
-          "text-margin-y": -10, // Adjust label position relative to edge
+          "line-color": "#ccc",
+          "curve-style": "bezier",
+          "font-size": "10px",
+          color: "#555",
+          "text-rotation": "autorotate",
+          "text-margin-y": -10,
         },
       },
       {
-        selector: 'edge[label="PARENT"]', // Exact match for "PARENT"
+        selector: 'edge[label="PARENT"]',
         style: {
           "target-arrow-shape": "triangle",
-          "target-arrow-color": "#28a745", // Green arrow
-          "line-color": "#28a745", // Green line
+          "target-arrow-color": "#28a745",
+          "line-color": "#28a745",
           "line-style": "solid",
         },
       },
       {
-        selector: 'edge[label="SPOUSE"]', // Exact match for "SPOUSE"
+        selector: 'edge[label="SPOUSE"]',
         style: {
-          "line-style": "dashed", // Dashed line for spouse relationship
-          "target-arrow-shape": "none", // No arrow for spouse relationship
-          "line-color": "#fd7e14", // Orange line
+          "line-style": "dashed",
+          "target-arrow-shape": "none",
+          "line-color": "#fd7e14",
         },
       },
       {
-        selector: "node:selected", // Style for selected node
+        selector: "node:selected",
         style: {
           "border-width": 3,
-          "border-color": "#DAA520", // Gold border for selected
+          "border-color": "#DAA520",
         },
       },
       {
-        selector: "node.highlighted-node", // Style for the persistently highlighted node
+        selector: "node.highlighted-node",
         style: {
-          "border-width": 5, // Thicker border
-          "border-color": "#ff0000", // Bright red border
+          "border-width": 5,
+          "border-color": "#ff0000",
           "border-opacity": 0.8,
-          "shadow-blur": 10, // Add a subtle shadow/glow
+          "shadow-blur": 10,
           "shadow-color": "#ff0000",
           "shadow-opacity": 0.6,
-          "z-index": 999, // Ensure highlighted node is drawn on top
+          "z-index": 999,
         },
       },
     ],
     [],
   );
 
-  // Layout options using elk (memoized)
   const layout = useMemo(
     () => ({
       name: "elk",
-      fit: true, // Keep fit option
+      fit: true,
       padding: 50,
-      // Restore detailed ELK options
       elk: {
         algorithm: "layered",
-        "elk.direction": "DOWN", // Top to bottom
-        "elk.layered.spacing.nodeNodeBetweenLayers": "80", // Vertical spacing
-        "elk.spacing.nodeNode": "40", // Horizontal spacing within layer
+        "elk.direction": "DOWN",
+        "elk.layered.spacing.nodeNodeBetweenLayers": "80",
+        "elk.spacing.nodeNode": "40",
         "elk.layered.nodePlacement.favorStraightEdges": "true",
         "elk.layered.compaction.postCompaction.strategy": "EDGE_LENGTH",
         "elk.separateConnectedComponents": "false",
         "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
-        "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED", // Options: LEFTUP, RIGHTDOWN, BALANCED, CENTER
+        "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
       },
     }),
     [],
   );
 
-  // Effect to initialize and manage the Cytoscape instance
   useEffect(() => {
     if (!containerRef.current) {
       console.log("Container ref not ready");
@@ -139,14 +130,12 @@ const FamilyTreeGraph = ({ elements, onNodeClick, selectedNodeId }) => {
 
     console.log("Initializing Cytoscape directly...");
 
-    // Destroy previous instance if it exists
     if (cyRef.current) {
       console.log("Destroying previous Cytoscape instance.");
-      // Destroy qtips before destroying the instance
       cyRef.current.nodes().forEach((node) => {
-        const qtipApi = node.scratch("_qtip"); // qtip stores API in scratchpad
+        const qtipApi = node.scratch("_qtip");
         if (qtipApi) {
-          qtipApi.destroy(true); // Destroy qtip instance immediately
+          qtipApi.destroy(true);
         }
       });
       cyRef.current.destroy();
@@ -160,19 +149,13 @@ const FamilyTreeGraph = ({ elements, onNodeClick, selectedNodeId }) => {
       layout: { name: "preset" },
       minZoom: 0.5,
       maxZoom: 2,
-      // Remove explicit interaction settings to rely on defaults
-      // userPanningEnabled: true,
-      // userZoomingEnabled: true,
-      // boxSelectionEnabled: true,
     });
 
     cyRef.current = cy;
 
-    // Define the function to run layout and setup qTips
     const runLayoutAndTooltips = () => {
       console.log("Setting up qTips...");
 
-      // Setup qTips immediately
       cy.nodes().forEach((node) => {
         const nodeData = node.data();
         if (typeof node.qtip !== "function") {
@@ -182,9 +165,8 @@ const FamilyTreeGraph = ({ elements, onNodeClick, selectedNodeId }) => {
           return;
         }
 
-        const placeholder = t("common.noData", "No data"); // Use fully qualified key
+        const placeholder = t("common.noData", "No data");
 
-        // Calculate Age using i18n
         let ageString = placeholder;
         if (nodeData.birth_date) {
           try {
@@ -194,7 +176,6 @@ const FamilyTreeGraph = ({ elements, onNodeClick, selectedNodeId }) => {
               : new Date();
 
             if (!isNaN(birthDate.getTime())) {
-              // Check if birth date is valid
               let age = endDate.getFullYear() - birthDate.getFullYear();
               const monthDiff = endDate.getMonth() - birthDate.getMonth();
               if (
@@ -205,54 +186,47 @@ const FamilyTreeGraph = ({ elements, onNodeClick, selectedNodeId }) => {
               }
 
               if (age >= 0) {
-                // Use i18next for pluralization
-                ageString = t("years", "{{count}} years", { count: age }); // Reverted to t hook
+                ageString = t("years", "{{count}} years", { count: age });
                 if (nodeData.death_date) {
-                  ageString += ` ${t("ageAtDeathSuffix", "(at time of death)")}`; // Reverted to t hook
+                  ageString += ` ${t("ageAtDeathSuffix", "(at time of death)")}`;
                 }
               } else {
                 console.warn(`Calculated negative age for node ${nodeData.id}`);
-                ageString = t("invalidDate", "Invalid date"); // Reverted to t hook
+                ageString = t("invalidDate", "Invalid date");
               }
             } else {
               console.warn(
                 `Invalid birth date format for node ${nodeData.id}: ${nodeData.birth_date}`,
               );
-              ageString = t("invalidDate", "Invalid date"); // Reverted to t hook
+              ageString = t("invalidDate", "Invalid date");
             }
           } catch (e) {
             console.error(`Error calculating age for node ${nodeData.id}:`, e);
-            ageString = t("ageCalculationError", "Error"); // Reverted to t hook
+            ageString = t("ageCalculationError", "Error");
           }
         }
 
-        // Build tooltip HTML using translation keys
-        let tooltipLabel = nodeData.label || `ID: ${node.id()}`; // Keep ID fallback for label
+        let tooltipLabel = nodeData.label || `ID: ${node.id()}`;
         let tooltipHTML = `<strong>${tooltipLabel}</strong>`;
-        tooltipHTML += `<br/>${t("birthDate", "Born")}: ${nodeData.birth_date || placeholder}`; // Reverted to t hook
-        tooltipHTML += `<br/>${t("deathDate", "Died")}: ${nodeData.death_date || placeholder}`; // Reverted to t hook
-        // Ensure lowercase key for translation
-        tooltipHTML += `<br/>${t("genderLabel", "Gender")}: ${nodeData.gender ? t(`gender.${nodeData.gender.toLowerCase()}`, nodeData.gender) : placeholder}`; // Reverted to t hook
-        tooltipHTML += `<br/>${t("ageLabel", "Age")}: ${ageString}`; // Reverted to t hook
-        // Note: Notes are not typically included in tooltips, only details panel.
+        tooltipHTML += `<br/>${t("birthDate", "Born")}: ${nodeData.birth_date || placeholder}`;
+        tooltipHTML += `<br/>${t("deathDate", "Died")}: ${nodeData.death_date || placeholder}`;
+        tooltipHTML += `<br/>${t("genderLabel", "Gender")}: ${nodeData.gender ? t(`gender.${nodeData.gender.toLowerCase()}`, nodeData.gender) : placeholder}`;
+        tooltipHTML += `<br/>${t("ageLabel", "Age")}: ${ageString}`;
 
         node.qtip({
-          content: tooltipHTML, // Use the translated HTML
+          content: tooltipHTML,
           position: { my: "bottom center", at: "top center", target: node },
           style: { classes: "qtip-bootstrap", tip: { width: 16, height: 8 } },
           show: { event: "mouseover", solo: true },
           hide: { event: "mouseout unfocus", fixed: true, delay: 100 },
         });
-      }); // End qTip setup loop
+      });
       console.log("qTips setup complete.");
-      // Removed i18n.isInitialized check block
 
       console.log("Running ELK layout...");
-      const elkLayout = cy.layout(layout); // Use ELK layout config
+      const elkLayout = cy.layout(layout);
 
-      // Use the 'stop' event of the layout ONLY to unlock nodes
       elkLayout.one("layoutstop", () => {
-        // Check if component is still mounted before proceeding
         if (!isMounted.current) {
           console.log(
             "Layout stopped, but component unmounted. Skipping unlock.",
@@ -260,26 +234,22 @@ const FamilyTreeGraph = ({ elements, onNodeClick, selectedNodeId }) => {
           return;
         }
         console.log("Layout stopped, unlocking nodes...");
-        // Unlock nodes after layout completes
         cy.nodes().forEach((node) => {
           node.unlock();
         });
         console.log("Nodes unlock attempted after layout.");
-      }); // End layoutstop listener
+      });
 
-      elkLayout.run(); // Start the layout run
+      elkLayout.run();
     };
 
-    // Run layout/tooltips after a short delay (keep delay for ELK)
     const timeoutId = setTimeout(runLayoutAndTooltips, 50);
 
-    // Setup tap listener immediately
     const handleNodeTap = (event) => {
       const tappedNode = event.target;
       const nodeData = tappedNode.data();
       console.log("Node tapped:", nodeData);
 
-      // Hide all existing qTips immediately on tap
       cy.nodes().forEach((n) => {
         const qtipApi = n.scratch("_qtip");
         if (qtipApi) {
@@ -287,11 +257,10 @@ const FamilyTreeGraph = ({ elements, onNodeClick, selectedNodeId }) => {
         }
       });
 
-      // Add a brief visual flash on tap
       tappedNode.addClass("tapped-node");
       setTimeout(() => {
         tappedNode.removeClass("tapped-node");
-      }, 300); // Remove class after 300ms
+      }, 300);
 
       if (onNodeClick) {
         onNodeClick(nodeData);
@@ -299,64 +268,53 @@ const FamilyTreeGraph = ({ elements, onNodeClick, selectedNodeId }) => {
     };
     cy.on("tap", "node", handleNodeTap);
 
-    // Add a style for the tapped node flash
     cy.style()
       .selector(".tapped-node")
       .style({
-        "background-color": "#ffcc00", // Bright yellow flash
+        "background-color": "#ffcc00",
         "transition-duration": "0.1s",
         "transition-property": "background-color",
       })
       .update();
 
-    // Cleanup function for the main effect
     return () => {
       console.log("Cleaning up Cytoscape instance and listeners...");
-      isMounted.current = false; // Set mounted status to false on cleanup
-      clearTimeout(timeoutId); // Clear the timeout for ELK delay
+      isMounted.current = false;
+      clearTimeout(timeoutId);
       if (cyRef.current) {
-        // Unbind tap listener first
         cyRef.current.off("tap", "node", handleNodeTap);
-        // Then destroy qtips
         cyRef.current.nodes().forEach((node) => {
           const qtipApi = node.scratch("_qtip");
           if (qtipApi) {
-            qtipApi.destroy(true); // Destroy immediately
+            qtipApi.destroy(true);
           }
         });
-        // Finally, destroy the Cytoscape instance
         cyRef.current.destroy();
-        cyRef.current = null; // Ensure ref is cleared
+        cyRef.current = null;
         console.log("Cytoscape instance destroyed.");
       }
     };
-    // This main effect depends on elements and the onNodeClick callback
-  }, [elements, onNodeClick, layout, stylesheet]); // Added layout and stylesheet
+  }, [elements, onNodeClick, layout, stylesheet]);
 
-  // Effect to handle highlighting based on selectedNodeId
   useEffect(() => {
     const cy = cyRef.current;
-    if (!cy) return; // Cytoscape instance not ready
+    if (!cy) return;
 
-    // Remove highlight from all nodes first
     cy.nodes().removeClass("highlighted-node");
 
-    // Add highlight to the selected node if it exists
     if (selectedNodeId) {
-      const selectedNode = cy.getElementById(String(selectedNodeId)); // Ensure ID is a string
+      const selectedNode = cy.getElementById(String(selectedNodeId));
       if (selectedNode.length > 0) {
-        // Check if node exists
         selectedNode.addClass("highlighted-node");
-        console.log(`Highlighting node: ${selectedNodeId}`); // Optional: for debugging
+        console.log(`Highlighting node: ${selectedNodeId}`);
       } else {
         console.log(
           `Node with ID ${selectedNodeId} not found for highlighting.`,
-        ); // Optional: for debugging
+        );
       }
     }
-  }, [selectedNodeId]); // Depend only on selectedNodeId
+  }, [selectedNodeId]);
 
-  // Render the container div
   return (
     <div
       ref={containerRef}
@@ -364,7 +322,5 @@ const FamilyTreeGraph = ({ elements, onNodeClick, selectedNodeId }) => {
     />
   );
 };
-
-// Removed import from here as it's moved to the top
 
 export default FamilyTreeGraph;

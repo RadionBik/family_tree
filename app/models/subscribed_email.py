@@ -13,7 +13,6 @@ class SubscribedEmail(Base):
     email: Mapped[str] = mapped_column(
         String(120), unique=True, nullable=False, index=True
     )
-    # Use Python's datetime.utcnow for default values as SQLite doesn't have func.utcnow()
     subscription_date: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow
     )
@@ -25,9 +24,3 @@ class SubscribedEmail(Base):
     def __repr__(self):
         status = "Active" if self.is_active else "Inactive"
         return f"<SubscribedEmail {self.email} ({status})>"
-
-    # Email validation is typically handled at the API layer using Pydantic models in FastAPI
-    # Example Pydantic model (would go in a schemas.py or similar):
-    # from pydantic import BaseModel, EmailStr
-    # class EmailSchema(BaseModel):
-    #     email: EmailStr

@@ -1,33 +1,29 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import familyTreeService from "../services/familyTreeService"; // For API calls
+import familyTreeService from "../services/familyTreeService";
 
-// Simple component to display a single relationship and allow deletion
 const RelationshipItem = ({ relation, currentMemberId, onDelete, members }) => {
   const { t } = useTranslation();
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Determine the related member and the direction/type description
   let relatedMemberId = null;
   let relationDescriptionKey = "";
   let relationDescriptionContext = {};
 
   if (relation.from_member_id === currentMemberId) {
     relatedMemberId = relation.to_member_id;
-    // Relation is FROM current member TO related member
     if (relation.relation_type === "parent")
       relationDescriptionKey = "relationDesc.isParentOf";
     else if (relation.relation_type === "spouse")
       relationDescriptionKey = "relationDesc.isSpouseOf";
-    else relationDescriptionKey = "relationDesc.isRelatedTo"; // Fallback
+    else relationDescriptionKey = "relationDesc.isRelatedTo";
   } else {
     relatedMemberId = relation.from_member_id;
-    // Relation is TO current member FROM related member
     if (relation.relation_type === "parent")
       relationDescriptionKey = "relationDesc.isChildOf";
     else if (relation.relation_type === "spouse")
-      relationDescriptionKey = "relationDesc.isSpouseOf"; // Spouse is symmetric
-    else relationDescriptionKey = "relationDesc.isRelatedTo"; // Fallback
+      relationDescriptionKey = "relationDesc.isSpouseOf";
+    else relationDescriptionKey = "relationDesc.isRelatedTo";
   }
 
   const relatedMember = members.find((m) => m.id === relatedMemberId);
@@ -37,7 +33,6 @@ const RelationshipItem = ({ relation, currentMemberId, onDelete, members }) => {
   relationDescriptionContext = { name: relatedMemberName };
 
   const handleDelete = async () => {
-    // Add confirmation dialog
     const confirmMessage = t(
       "relationshipManager.confirmDeleteRelation",
       "Are you sure you want to delete this relationship?",
@@ -45,7 +40,7 @@ const RelationshipItem = ({ relation, currentMemberId, onDelete, members }) => {
         type: t(
           `relationType.${relation.relation_type}`,
           relation.relation_type,
-        ), // Localize type if possible
+        ),
         name: relatedMemberName,
       },
     );
@@ -53,7 +48,7 @@ const RelationshipItem = ({ relation, currentMemberId, onDelete, members }) => {
       setIsDeleting(true);
       try {
         await familyTreeService.deleteRelationshipAdmin(relation.id);
-        onDelete(relation.id, "success"); // Notify parent of success
+        onDelete(relation.id, "success");
       } catch (error) {
         console.error(`Error deleting relationship ${relation.id}:`, error);
         onDelete(
@@ -64,11 +59,10 @@ const RelationshipItem = ({ relation, currentMemberId, onDelete, members }) => {
               "relationshipManager.errorDelete",
               "Failed to delete relationship.",
             ),
-        ); // Notify parent of error
-        setIsDeleting(false); // Only stop loading on error
+        );
+        setIsDeleting(false);
       }
-    } // <-- Add missing closing brace for the if statement
-    // Don't setIsDeleting(false) on success, as the item will be removed
+    }
   };
 
   return (
@@ -87,7 +81,6 @@ const RelationshipItem = ({ relation, currentMemberId, onDelete, members }) => {
   );
 };
 
-// Main component to manage relationships for a member
 const RelationshipManager = ({
   memberId,
   relationshipsFrom,
@@ -95,26 +88,22 @@ const RelationshipManager = ({
   onRelationshipChange,
 }) => {
   const { t } = useTranslation();
-  const [allMembers, setAllMembers] = useState([]); // For the dropdown
+  const [allMembers, setAllMembers] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
   const [error, setError] = useState("");
-  const [message, setMessage] = useState({ type: "", text: "" }); // For create/delete status
+  const [message, setMessage] = useState({ type: "", text: "" });
 
-  // Form state for adding new relationship
   const [relatedMemberId, setRelatedMemberId] = useState("");
-  const [relationType, setRelationType] = useState("parent"); // Default type
+  const [relationType, setRelationType] = useState("parent");
   const [isCreating, setIsCreating] = useState(false);
 
-  // Combine relationships for display
   const allRelations = [...relationshipsFrom, ...relationshipsTo];
 
-  // Fetch all members for the dropdown selector
   useEffect(() => {
     setLoadingMembers(true);
     familyTreeService
-      .getMembersAdmin() // Use admin fetch to get all members
+      .getMembersAdmin()
       .then((data) => {
-        // Filter out the current member from the list of potential relatives
         setAllMembers(data.filter((m) => m.id !== memberId));
       })
       .catch((err) => {
@@ -145,16 +134,14 @@ const RelationshipManager = ({
     setMessage({ type: "", text: "" });
 
     try {
-      // Determine correct from/to based on relation type (e.g., parent means current member is parent OF related member)
       let fromId = memberId;
       let toId = parseInt(relatedMemberId, 10);
       let type = relationType;
 
-      // Adjust for child relationship (means related member is parent OF current member)
       if (relationType === "child") {
         fromId = parseInt(relatedMemberId, 10);
         toId = memberId;
-        type = "parent"; // Store as parent relationship in DB
+        type = "parent";
       }
 
       await familyTreeService.createRelationshipAdmin(fromId, toId, type);
@@ -165,9 +152,9 @@ const RelationshipManager = ({
           "Relationship added successfully.",
         ),
       });
-      setRelatedMemberId(""); // Reset form
+      setRelatedMemberId("");
       setRelationType("parent");
-      onRelationshipChange("create", "success"); // Notify parent page to potentially re-fetch data
+      onRelationshipChange("create", "success");
     } catch (error) {
       console.error("Error creating relationship:", error);
       setMessage({
@@ -181,7 +168,6 @@ const RelationshipManager = ({
     }
   };
 
-  // Callback for when a RelationshipItem is deleted
   const handleRelationDeleted = (relationId, status, errorText = "") => {
     if (status === "success") {
       setMessage({
@@ -191,7 +177,7 @@ const RelationshipManager = ({
           "Relationship deleted successfully.",
         ),
       });
-      onRelationshipChange("delete", "success"); // Notify parent
+      onRelationshipChange("delete", "success");
     } else {
       setMessage({ type: "error", text: errorText });
     }
@@ -210,7 +196,6 @@ const RelationshipManager = ({
         </div>
       )}
 
-      {/* List Existing Relationships */}
       <div className="existing-relationships">
         <h5>
           {t("relationshipManager.existingTitle", "Existing Relationships:")}
@@ -223,7 +208,7 @@ const RelationshipManager = ({
                 relation={rel}
                 currentMemberId={memberId}
                 onDelete={handleRelationDeleted}
-                members={allMembers} // Pass member list for name lookup
+                members={allMembers}
               />
             ))}
           </ul>
@@ -237,7 +222,6 @@ const RelationshipManager = ({
         )}
       </div>
 
-      {/* Add New Relationship Form */}
       <div className="add-relationship-form">
         <h5>{t("relationshipManager.addTitle", "Add New Relationship")}</h5>
         <form onSubmit={handleCreateRelationship}>
@@ -251,7 +235,6 @@ const RelationshipManager = ({
               onChange={(e) => setRelationType(e.target.value)}
               disabled={isCreating || loadingMembers}
             >
-              {/* Add 'child' as an option for easier user understanding */}
               <option value="parent">
                 {t("relationType.parent", "Parent of")}
               </option>
@@ -261,7 +244,6 @@ const RelationshipManager = ({
               <option value="spouse">
                 {t("relationType.spouse", "Spouse of")}
               </option>
-              {/* Add other types if needed */}
             </select>
           </div>
           <div className="form-group">
@@ -289,7 +271,6 @@ const RelationshipManager = ({
               )}
             </select>
           </div>
-          {/* Optional: Add start/end date fields here */}
           <button type="submit" disabled={isCreating || loadingMembers}>
             {isCreating
               ? t("common.adding", "Adding...")
@@ -339,7 +320,7 @@ const RelationshipManager = ({
         }
         .add-relationship-form .form-group {
           margin-bottom: 1rem;
-          max-width: 400px; /* Limit width of form elements */
+          max-width: 400px;
         }
         .add-relationship-form label {
           display: block;

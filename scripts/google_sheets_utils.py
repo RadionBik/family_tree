@@ -57,7 +57,6 @@ def get_family_data_from_sheet():
             logger.error("Google Sheets credentials not configured")
             return None
 
-        # Construct an absolute path to the credentials file from the project root
         project_root = Path(__file__).parent.parent
         service_account_path = project_root / service_account_file_name
 
@@ -73,10 +72,8 @@ def get_family_data_from_sheet():
             ]
         )
 
-        # Build Google Sheets API client
         service = build("sheets", "v4", credentials=scoped_creds)
 
-        # Get sheet data
         result = (
             service.spreadsheets()
             .values()
@@ -84,7 +81,6 @@ def get_family_data_from_sheet():
             .execute()
         )
 
-        # Convert to CSV
         values = result.get("values", [])
         if not values:
             logger.error("No data found in sheet")

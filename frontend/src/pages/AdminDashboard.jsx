@@ -13,7 +13,6 @@ const AdminDashboard = () => {
           "Welcome to the admin panel. Select an option from the navigation.",
         )}
       </p>
-      {/* Dashboard widgets can be added here later */}
     </div>
   );
 };

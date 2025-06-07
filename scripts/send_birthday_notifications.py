@@ -2,21 +2,15 @@ import asyncio
 import logging
 import os
 
-# Ensure the project root is in PYTHONPATH when running this script
-# Example: PYTHONPATH=$PYTHONPATH:/path/to/family_tree python scripts/send_birthday_notifications.py
 from app.services.birthday_service import get_todays_birthdays_for_notification
 from app.services.notification_service import format_birthday_email, send_email
-from app.utils.database import (  # Import session factory and engine
+from app.utils.database import (
     AsyncSessionFactory,
     async_engine,
 )
-from config import config  # Import config dictionary
+from config import config
 
-# --- Logging Setup ---
-# Configure logging similar to main app but maybe simpler for a script
-log_dir = os.path.join(
-    os.path.dirname(__file__), "..", "logs"
-)  # Path relative to script
+log_dir = os.path.join(os.path.dirname(__file__), "..", "logs")
 if not os.path.exists(log_dir):
     os.makedirs(log_dir)
 log_file = os.path.join(log_dir, "birthday_notifications.log")
@@ -26,18 +20,16 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]",
     handlers=[
         logging.FileHandler(log_file),
-        logging.StreamHandler(),  # Also print to console
+        logging.StreamHandler(),
     ],
 )
 logger = logging.getLogger(__name__)
-# --- End Logging Setup ---
 
 
 async def run_notifications():
     """Fetches birthdays, formats emails, and sends notifications."""
     logger.info("Starting birthday notification script.")
 
-    # Load configuration
     config_name = os.getenv("APP_ENV", "development")
     app_config = config[config_name]
     logger.info(f"Loaded '{config_name}' configuration.")
@@ -104,7 +96,6 @@ async def run_notifications():
     except Exception:
         logger.exception("Failed to acquire database session.", exc_info=True)
     finally:
-        # Ensure the engine is disposed correctly when the script finishes
         if async_engine:
             await async_engine.dispose()
             logger.info("Database engine disposed.")
@@ -116,6 +107,4 @@ async def run_notifications():
 
 
 if __name__ == "__main__":
-    # This script can now be run directly for testing, but is intended to be called by the scheduler.
-    # The scheduler will ensure the environment is configured correctly.
     asyncio.run(run_notifications())

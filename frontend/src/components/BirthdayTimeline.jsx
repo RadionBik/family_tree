@@ -8,11 +8,10 @@ import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
 import CircularProgress from "@mui/material/CircularProgress";
 import Alert from "@mui/material/Alert";
-import Paper from "@mui/material/Paper"; // Use Paper for visual grouping
-import Link from "@mui/material/Link"; // Use Link for clickable name
-import Tooltip from "@mui/material/Tooltip"; // Use Tooltip for hover hint
+import Paper from "@mui/material/Paper";
+import Link from "@mui/material/Link";
+import Tooltip from "@mui/material/Tooltip";
 
-// Helper function to format date in Russian (e.g., "25 апреля")
 const formatRussianDate = (isoDateString) => {
   if (!isoDateString) return "";
   const date = new Date(isoDateString);
@@ -22,7 +21,6 @@ const formatRussianDate = (isoDateString) => {
   }).format(date);
 };
 
-// Helper function to calculate upcoming age
 const calculateUpcomingAge = (dateOfBirth, nextBirthdayDate) => {
   if (!dateOfBirth || !nextBirthdayDate) return "?";
   const birthYear = new Date(dateOfBirth).getFullYear();
@@ -30,7 +28,6 @@ const calculateUpcomingAge = (dateOfBirth, nextBirthdayDate) => {
   return nextBirthdayYear - birthYear;
 };
 
-// Accept onMemberSelect prop to notify parent of selection
 const BirthdayTimeline = ({ onMemberSelect }) => {
   const { t } = useTranslation();
   const [birthdays, setBirthdays] = useState([]);
@@ -74,7 +71,6 @@ const BirthdayTimeline = ({ onMemberSelect }) => {
       return (
         <List dense>
           {" "}
-          {/* dense reduces padding */}
           {birthdays.map((birthday) => {
             const upcomingAge = calculateUpcomingAge(
               birthday.birth_date,
@@ -98,15 +94,15 @@ const BirthdayTimeline = ({ onMemberSelect }) => {
                       placement="top"
                     >
                       <Link
-                        component="button" // Renders as a button but looks like a link
-                        variant="body1" // Adjust variant as needed
+                        component="button"
+                        variant="body1"
                         onClick={handleNameClick}
                         sx={{
                           cursor: "pointer",
                           textAlign: "left",
                           p: 0,
                           fontWeight: "bold",
-                        }} // Style as needed
+                        }}
                       >
                         {birthday.name}
                       </Link>
@@ -128,7 +124,6 @@ const BirthdayTimeline = ({ onMemberSelect }) => {
   };
 
   return (
-    // Use Paper for better visual separation and styling
     <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
       <Typography variant="h6" component="h2" gutterBottom>
         {t("birthdayTimeline.title")}

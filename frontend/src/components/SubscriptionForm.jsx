@@ -1,19 +1,19 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import subscriptionService from "../services/subscriptionService"; // Import the service
+import subscriptionService from "../services/subscriptionService";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Alert from "@mui/material/Alert";
 import CircularProgress from "@mui/material/CircularProgress";
-import Paper from "@mui/material/Paper"; // Use Paper for visual grouping
+import Paper from "@mui/material/Paper";
 
 const SubscriptionForm = () => {
   const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ type: "", text: "" }); // type: 'success' | 'error'
+  const [message, setMessage] = useState({ type: "", text: "" });
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -49,7 +49,6 @@ const SubscriptionForm = () => {
   };
 
   return (
-    // Use Paper for visual container
     <Paper
       elevation={2}
       sx={{ p: 3, mt: 3, mb: 2, maxWidth: "sm", mx: "auto" }}
@@ -71,7 +70,7 @@ const SubscriptionForm = () => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={loading}
-          error={message.type === "error"} // Highlight field if there was an error related to it (optional)
+          error={message.type === "error"}
         />
 
         {message.text && (
@@ -95,7 +94,7 @@ const SubscriptionForm = () => {
             <CircularProgress
               size={24}
               sx={{
-                color: "primary.main", // Or choose a contrast color
+                color: "primary.main",
                 position: "absolute",
                 top: "50%",
                 left: "50%",

@@ -13,9 +13,7 @@ class UpcomingBirthdayRead(BaseModel):
     days_until_birthday: int  # Days remaining until the next birthday
     upcoming_age: int  # The age the person will turn on their next birthday
 
-    model_config = ConfigDict(
-        from_attributes=True
-    )  # Enable ORM mode if needed later, though this is usually constructed
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BirthdayNotificationInfo(BaseModel):

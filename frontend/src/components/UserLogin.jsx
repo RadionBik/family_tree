@@ -2,12 +2,9 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom"; // Import useNavigate
 import authService from "../services/authService";
-// Optionally, create a UserLogin.css if specific styles are needed
-// import "./UserLogin.css";
-
 const UserLogin = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate(); // Initialize navigate
+  const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,9 +18,8 @@ const UserLogin = () => {
     try {
       const loginData = await authService.login(username, password);
 
-      // Store token directly
       if (loginData.access_token) {
-        localStorage.setItem("adminToken", loginData.access_token); // Using "adminToken" as per plan
+        localStorage.setItem("adminToken", loginData.access_token);
         setMessage({
           type: "success",
           text: t(
@@ -31,12 +27,10 @@ const UserLogin = () => {
             "Login Successful! Redirecting...",
           ),
         });
-        // Navigate to homepage after a short delay
         setTimeout(() => {
           navigate("/");
         }, 1500);
       } else {
-        // Should not happen if authService.login throws on failure, but as a fallback
         throw new Error(
           t(
             "userLogin.errorTokenMissing",
@@ -62,7 +56,7 @@ const UserLogin = () => {
           "Network error. Please check your connection.",
         );
       } else if (error.message && error.message.includes("token received")) {
-        errorMessage = error.message; // Use the specific error message for missing token
+        errorMessage = error.message;
       }
       console.error(
         "User Login Error:",
@@ -71,12 +65,10 @@ const UserLogin = () => {
       setMessage({ type: "error", text: errorMessage });
     } finally {
       setLoading(false);
-      // Do not clear fields immediately on error, allow user to correct
       if (message.type !== "success") {
-        // Clear only on success for redirect
         setTimeout(() => {
           if (document.activeElement instanceof HTMLElement) {
-            document.activeElement.blur(); // Remove focus to prevent issues if component unmounts
+            document.activeElement.blur();
           }
         }, 0);
       }

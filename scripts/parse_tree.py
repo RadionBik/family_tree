@@ -14,17 +14,15 @@ except ImportError:
 
 def xmlToDict(xml_element, debug=False):
     output = []
-    for elem in xml_element.findall("node"):  # Only process 'node' elements
+    for elem in xml_element.findall("node"):
         person_data = {}
 
-        # Extract ID
         person_data["id"] = elem.get("ID")
 
-        # Extract text content, prioritizing richcontent
         rich_content_element = elem.find("richcontent")
-        if rich_content_element is not None:  # Changed condition here
+        if rich_content_element is not None:
             html_content = rich_content_element.text
-            if html_content:  # Only parse if there's actual content
+            if html_content:
                 soup = BeautifulSoup(html_content, "html.parser")
                 text_parts = [
                     tag.get_text(strip=True)
@@ -37,21 +35,17 @@ def xmlToDict(xml_element, debug=False):
                     elem.get("TEXT", "").replace("&#10;", "\n").strip()
                 )
         else:
-            # Fallback to TEXT attribute if no richcontent
             person_data["name"] = elem.get("TEXT", "").replace("&#10;", "\n").strip()
 
-        # Clean up name (remove numbering, extra spaces, etc.)
         if person_data.get("name"):
-            # Example: "1. Мингаз Валиев, жена: Зинаида" -> "Мингаз Валиев, жена: Зинаида"
             person_data["name"] = person_data["name"].lstrip("0123456789. ").strip()
 
-        # Recursively parse child nodes
         children = xmlToDict(elem, debug)
         if children:
             person_data["children"] = children
             person_data["type"] = "branch"
         else:
-            person_data["children"] = []  # Keep empty list for consistency
+            person_data["children"] = []
             person_data["type"] = "leaf"
 
         output.append(person_data)
@@ -83,24 +77,21 @@ def main():
         print(f"File IO Error: {e}")
         exit(1)
 
-    ## Parse file
     root_element = ET.fromstring(raw_xml)
 
-    # Collect all top-level non-style nodes as potential roots of the family tree
     mind_map_roots = []
     for node in root_element.findall("node"):
-        if "LOCALIZED_TEXT" not in node.attrib:  # Filter out style nodes
+        if "LOCALIZED_TEXT" not in node.attrib:
             mind_map_roots.append(node)
 
     if not mind_map_roots:
         print("Error: Could not find any main family tree root nodes in the XML.")
         exit(1)
 
-    # Process each identified root node
     mind_map_json = []
     for root_node in mind_map_roots:
         parsed_node = xmlToDict(root_node, args.debug)
-        if parsed_node:  # xmlToDict returns a list, so extend it
+        if parsed_node:
             mind_map_json.extend(parsed_node)
 
     output_file_path = (

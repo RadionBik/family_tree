@@ -72,14 +72,7 @@ def get_text(key: str, default: str = "Translation missing", **kwargs) -> str:
     """
     text = translations.get(key, default)
     try:
-        # Use .format() for simple placeholder replacement
         return text.format(**kwargs)
     except KeyError as e:
-        # Handle cases where a placeholder exists in the string but wasn't provided in kwargs
         print(f"Warning: Missing format key '{e}' for translation key '{key}'")
-        return text  # Return the unformatted string
-
-
-# Example usage:
-# from .localization import get_text
-# message = get_text("api_welcome")
+        return text

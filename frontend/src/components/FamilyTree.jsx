@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import FamilyTreeGraph from "./FamilyTreeGraph"; // Import the graph component
-import GraphLegend from "./GraphLegend"; // Import the legend component
-import familyTreeService from "../services/familyTreeService"; // Import the service
+import FamilyTreeGraph from "./FamilyTreeGraph";
+import GraphLegend from "./GraphLegend";
+import familyTreeService from "../services/familyTreeService";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -10,7 +10,6 @@ import Alert from "@mui/material/Alert";
 import Paper from "@mui/material/Paper";
 import Button from "@mui/material/Button";
 
-// Helper function to transform API data to Cytoscape format (remains the same)
 const transformDataForCytoscape = (members) => {
   const elements = [];
   const edgeIds = new Set();
@@ -55,7 +54,6 @@ const transformDataForCytoscape = (members) => {
   return elements;
 };
 
-// Accept selectedMemberId and onMemberSelect from HomePage
 const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
   const { t } = useTranslation();
   const [elements, setElements] = useState([]);
@@ -125,9 +123,8 @@ const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
       return null;
     }
 
-    const placeholder = t("common.noData", "No data"); // Use fully qualified key with fallback
+    const placeholder = t("common.noData", "No data");
 
-    // Calculate Age using i18n
     let ageString = placeholder;
     if (memberData.birth_date) {
       try {
@@ -137,7 +134,6 @@ const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
           : new Date();
 
         if (!isNaN(birthDate.getTime())) {
-          // Check if birth date is valid
           let age = endDate.getFullYear() - birthDate.getFullYear();
           const monthDiff = endDate.getMonth() - birthDate.getMonth();
           if (
@@ -148,29 +144,23 @@ const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
           }
 
           if (age >= 0) {
-            // Use i18next for pluralization (keys: years_one, years_few, years_many)
-            // Provide English fallbacks. Ensure these keys exist in your translation files.
             ageString = t("years", "{{count}} years", { count: age });
 
             if (memberData.death_date) {
-              // Add suffix using translation key
               ageString += ` ${t("ageAtDeathSuffix", "(at time of death)")}`;
             }
           } else {
             console.warn(`Calculated negative age for node ${memberData.id}`);
-            // Use translation key for invalid date
             ageString = t("invalidDate", "Invalid date");
           }
         } else {
           console.warn(
             `Invalid birth date format for node ${memberData.id}: ${memberData.birth_date}`,
           );
-          // Use translation key for invalid date
           ageString = t("invalidDate", "Invalid date");
         }
       } catch (e) {
         console.error(`Error calculating age for node ${memberData.id}:`, e);
-        // Use translation key for error
         ageString = t("ageCalculationError", "Error");
       }
     }
@@ -202,7 +192,6 @@ const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
           <Typography component="span" fontWeight="bold">
             {t("genderLabel", "Gender")}:
           </Typography>{" "}
-          {/* Ensure lowercase key for translation */}
           {memberData.gender
             ? t(`gender.${memberData.gender.toLowerCase()}`, memberData.gender)
             : placeholder}
@@ -211,16 +200,14 @@ const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
           <Typography component="span" fontWeight="bold">
             {t("ageLabel", "Age")}:
           </Typography>{" "}
-          {ageString} {/* Now uses i18n placeholders */}
+          {ageString}
         </Typography>
-        {/* Conditionally render Notes only if they exist */}
         {memberData.notes && (
           <Typography variant="body1" gutterBottom>
             <Typography component="span" fontWeight="bold">
               {t("notes", "Notes")}:
             </Typography>{" "}
             {memberData.notes}{" "}
-            {/* No placeholder needed here as we only render if notes exist */}
           </Typography>
         )}
         <Button
@@ -236,7 +223,6 @@ const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
   };
 
   return (
-    // Use Paper for the main container
     <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
       <Typography variant="h6" component="h2" gutterBottom>
         {t("familyTree.title")}
@@ -255,17 +241,16 @@ const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
 
       {!loading && !error && elements.length > 0 && (
         <>
-          {/* Container for the graph itself - adjust height, ensure width is 100% */}
           <Box
             sx={{
-              height: "500px", // Keep height or adjust as needed
+              height: "500px",
               border: "1px solid",
               borderColor: "divider",
-              mb: 2, // Margin bottom before legend
-              position: "relative", // Needed for Cytoscape positioning?
-              width: "100%", // Explicitly set width
-              overflow: "hidden", // Hide potential overflow if graph is slightly too large
-              boxSizing: "border-box", // Ensure border is included in width/height
+              mb: 2,
+              position: "relative",
+              width: "100%",
+              overflow: "hidden",
+              boxSizing: "border-box",
             }}
           >
             <FamilyTreeGraph
@@ -274,10 +259,8 @@ const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
               selectedNodeId={selectedMemberId}
             />
           </Box>
-          {/* Add some margin/padding to the legend container if needed */}
           <Box sx={{ pl: 1 }}>
             {" "}
-            {/* Optional: Slight padding-left for legend */}
             <GraphLegend />
           </Box>
         </>
@@ -286,7 +269,6 @@ const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
         <Typography sx={{ mt: 2 }}>{t("familyTree.noData")}</Typography>
       )}
 
-      {/* Render Member Details */}
       {renderMemberDetails()}
     </Paper>
   );

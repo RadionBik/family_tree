@@ -38,7 +38,6 @@ async def seed_user(
 
     logger.info(f"Checking for existing {role} user '{username}' or email '{email}'...")
 
-    # Check if user already exists - using only existing columns
     stmt = select(AdminUser).where(
         (AdminUser.username == username) | (AdminUser.email == email)
     )
@@ -56,7 +55,7 @@ async def seed_user(
         new_user = AdminUser(
             username=username,
             email=email,
-            password=password,  # Password setter handles hashing
+            password=password,
             role=role,
             is_active=True,
         )
@@ -86,20 +85,16 @@ async def seed_viewer_user(db: AsyncSession):
 
 
 async def main():
-    # Run the main seeding process for family data
     await seed_database()
 
-    # Seed the initial admin user
     async with AsyncSessionFactory() as db_admin:
         await seed_admin_user(db_admin)
 
-    # Seed the shared viewer user
     async with AsyncSessionFactory() as db_viewer:
         await seed_viewer_user(db_viewer)
 
 
 if __name__ == "__main__":
     asyncio.run(main())
-    # Dispose engine after script finishes
     asyncio.run(async_engine.dispose())
     logger.info("Engine disposed.")

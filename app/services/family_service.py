@@ -70,7 +70,6 @@ async def get_all_family_members(db: AsyncSession) -> list[FamilyMemberRead]:
         stmt = (
             select(FamilyMember)
             .options(
-                # Eager load relationships AND the members involved in them
                 selectinload(FamilyMember.relationships_from).selectinload(
                     Relation.from_member
                 ),
@@ -93,45 +92,32 @@ async def get_all_family_members(db: AsyncSession) -> list[FamilyMemberRead]:
         if not family_members_orm:
             return []
 
-        # --- Calculate is_descendant flag relative to primary root(s) ---
         members_dict: dict[int, FamilyMember] = {m.id: m for m in family_members_orm}
-        # Build only the child map (parent map isn't needed for BFS from specific roots)
         child_map: dict[int, set[int]] = {m_id: set() for m_id in members_dict}
         for member in family_members_orm:
             for rel in member.relationships_from:
-                # Compare with Enum member directly
                 if rel.relation_type == RelationTypeEnum.PARENT:
-                    # Ensure the target child is actually in our fetched members
                     if rel.to_member_id in members_dict:
                         child_map[member.id].add(rel.to_member_id)
 
-        # Identify the primary root member(s) using a heuristic (lowest ID)
-        # WARNING: This heuristic might be incorrect for complex family trees.
-        # A more robust solution involves marking progenitors in the DB.
         if not members_dict:
             primary_root_ids = set()
         else:
-            # Find the minimum ID among all fetched members
             min_id = min(members_dict.keys())
             primary_root_ids = {min_id}
-            # Optional: Add checks here if min_id member has parents *within the dataset*
-            # to ensure it's a plausible root, but keep it simple for now.
 
         logger.debug(
             f"Identified primary root member(s) (heuristic - lowest ID): {primary_root_ids}"
         )
 
-        # Perform BFS starting *only* from the primary root(s)
         descendant_ids: set[int] = set()
         if primary_root_ids:
-            descendant_ids.update(primary_root_ids)  # Start with the roots themselves
+            descendant_ids.update(primary_root_ids)
             queue = deque(primary_root_ids)
             while queue:
                 current_id = queue.popleft()
-                # Find children using the pre-built child_map
                 children = child_map.get(current_id, set())
                 for child_id in children:
-                    # Check if child exists and hasn't been visited
                     if child_id in members_dict and child_id not in descendant_ids:
                         descendant_ids.add(child_id)
                         queue.append(child_id)
@@ -140,17 +126,11 @@ async def get_all_family_members(db: AsyncSession) -> list[FamilyMemberRead]:
             f"Identified descendant members (IDs) from primary root(s): {descendant_ids}"
         )
 
-        # Convert ORM objects to Pydantic models, adding the is_descendant flag
         family_members_read: list[FamilyMemberRead] = []
         for member in family_members_orm:
-            # Use model_validate to create Pydantic model from ORM object
-            member_read = FamilyMemberRead.model_validate(
-                member
-            )  # from_attributes=True is default in ConfigDict
-            # Set the calculated flag
+            member_read = FamilyMemberRead.model_validate(member)
             member_read.is_descendant = member.id in descendant_ids
             family_members_read.append(member_read)
-        # ------------------------------------
 
         logger.debug(
             f"Family members Pydantic data with is_descendant flag being returned: {family_members_read}"
@@ -184,30 +164,19 @@ async def get_paginated_family_members(
     )
 
     try:
-        # Base query
         base_query = select(FamilyMember)
         count_query = select(func.count(FamilyMember.id))
 
-        # Apply search filter if provided (case-insensitive search on name)
         if search_term:
             search_filter = FamilyMember.name.ilike(f"%{search_term}%")
             base_query = base_query.where(search_filter)
             count_query = count_query.where(search_filter)
 
-        # Query for the items on the current page
-        items_stmt = (
-            base_query.order_by(FamilyMember.id)  # Or name, etc.
-            .offset(skip)
-            .limit(limit)
-            # No relationship preloading for the list view
-        )
+        items_stmt = base_query.order_by(FamilyMember.id).offset(skip).limit(limit)
         items_result = await db.execute(items_stmt)
         members_orm = items_result.scalars().all()
-        members_read = [
-            FamilyMemberRead.model_validate(m) for m in members_orm
-        ]  # Convert to Pydantic
+        members_read = [FamilyMemberRead.model_validate(m) for m in members_orm]
 
-        # Query for the total count of items matching the filter
         total_items_result = await db.execute(count_query)
         total_items = total_items_result.scalar_one()
 
@@ -221,7 +190,7 @@ async def get_paginated_family_members(
             f"Error fetching paginated family members (skip={skip}, limit={limit}).",
             exc_info=True,
         )
-        raise e  # Re-raise for the API layer
+        raise e
 
 
 async def get_member_by_id(db: AsyncSession, member_id: int) -> FamilyMemberRead:
@@ -259,10 +228,8 @@ async def get_member_by_id(db: AsyncSession, member_id: int) -> FamilyMemberRead
         raise MemberNotFoundError(member_id=member_id)
 
     logger.info(f"Successfully fetched member ID {member_id}.")
-    # We might need to recalculate is_descendant relative to this member or a root
-    # For now, return without it or set to None/False for single fetch
     member_read = FamilyMemberRead.model_validate(member_orm)
-    member_read.is_descendant = None  # Or calculate if needed for this context
+    member_read.is_descendant = None
     return member_read
 
 
@@ -283,11 +250,9 @@ async def create_family_member(
         f"Creating new family member: {member_data.first_name} {member_data.last_name}"
     )
 
-    # Generate ID if not provided
     if member_id is None:
         member_id = str(uuid.uuid4())
 
-    # Create ORM model instance
     new_member_orm = FamilyMember(
         id=member_id,
         last_name=member_data.last_name,
@@ -296,27 +261,25 @@ async def create_family_member(
         death_date=member_data.death_date,
         gender=member_data.gender,
         location=member_data.location,
-        notes=member_data.notes,  # Map bio from frontend to notes
-        # created_at and updated_at are handled by the model defaults
+        notes=member_data.notes,
     )
 
     try:
         db.add(new_member_orm)
-        await db.flush()  # Assigns ID to new_member_orm
-        await db.refresh(new_member_orm)  # Load default values like created_at
-        await db.commit()  # Commit the transaction
+        await db.flush()
+        await db.refresh(new_member_orm)
+        await db.commit()
         logger.info(
             f"Successfully created member ID {new_member_orm.id}: {member_data.first_name} {member_data.last_name}"
         )
-        # Return the Pydantic model
         return FamilyMemberReadMinimal.model_validate(new_member_orm)
     except Exception as e:
-        await db.rollback()  # Rollback in case of error
+        await db.rollback()
         logger.exception(
             f"Database error creating family member {member_data.first_name} {member_data.last_name}.",
             exc_info=True,
         )
-        raise e  # Re-raise the exception for the API layer to handle
+        raise e
 
 
 async def update_family_member(
@@ -338,7 +301,6 @@ async def update_family_member(
     """
     logger.info(f"Updating family member with ID: {member_id}")
 
-    # Fetch the existing member
     stmt = select(FamilyMember).where(FamilyMember.id == member_id)
     result = await db.execute(stmt)
     member_orm = result.scalar_one_or_none()
@@ -347,23 +309,15 @@ async def update_family_member(
         logger.warning(f"Attempted to update non-existent member ID: {member_id}")
         raise MemberNotFoundError(member_id=member_id)
 
-    # Update fields from the Pydantic model if they are provided
-    update_data = member_data.model_dump(exclude_unset=True)  # Get only provided fields
+    update_data = member_data.model_dump(exclude_unset=True)
 
-    # Handle name concatenation if name parts are provided
-    # Unused variables first_name, last_name, middle_name removed.
-
-    # Reconstruct full name based on potentially updated parts
-    # This logic assumes a simple "LastName FirstName MiddleName" structure and might need refinement
     current_parts = member_orm.name.split(" ")
     if "last_name" in update_data:
         current_parts[0] = update_data["last_name"]
     if "first_name" in update_data:
         current_parts[1] = update_data["first_name"]
-    # Filter out empty strings that might result from None middle names
     member_orm.name = " ".join(filter(None, current_parts))
 
-    # Update other fields directly
     if "birth_date" in update_data:
         member_orm.birth_date = update_data["birth_date"]
     if "death_date" in update_data:
@@ -372,17 +326,14 @@ async def update_family_member(
         member_orm.gender = update_data["gender"]
     if "location" in update_data:
         member_orm.location = update_data["location"]
-    if "notes" in update_data:  # Map bio to notes
+    if "notes" in update_data:
         member_orm.notes = update_data["notes"]
 
-    # updated_at is handled automatically by the model event listener
-
     try:
-        await db.flush()  # Apply changes to the session
-        await db.refresh(member_orm)  # Refresh to get updated state (like updated_at)
-        await db.commit()  # Commit the transaction
+        await db.flush()
+        await db.refresh(member_orm)
+        await db.commit()
         logger.info(f"Successfully updated member ID {member_id}.")
-        # Return the updated Pydantic model
         return FamilyMemberRead.model_validate(member_orm)
     except Exception as e:
         await db.rollback()
@@ -405,7 +356,6 @@ async def delete_family_member(db: AsyncSession, member_id: int) -> None:
     """
     logger.info(f"Attempting to delete family member with ID: {member_id}")
 
-    # Fetch the existing member
     stmt = select(FamilyMember).where(FamilyMember.id == member_id)
     result = await db.execute(stmt)
     member_orm = result.scalar_one_or_none()
@@ -414,18 +364,12 @@ async def delete_family_member(db: AsyncSession, member_id: int) -> None:
         logger.warning(f"Attempted to delete non-existent member ID: {member_id}")
         raise MemberNotFoundError(member_id=member_id)
 
-    # TODO: Consider relationship handling. Deleting a member might require
-    # deleting related Relation entries or handling constraints.
-    # For now, assume cascade delete is set up correctly in the DB/model,
-    # or handle relationship deletion explicitly here if needed.
-
     try:
         await db.delete(member_orm)
-        await db.commit()  # Commit the transaction
+        await db.commit()
         logger.info(f"Successfully deleted member ID {member_id}.")
     except Exception as e:
         await db.rollback()
-        # Log potential constraint violations or other DB errors
         logger.exception(
             f"Database error deleting member ID {member_id}.", exc_info=True
         )
@@ -456,7 +400,6 @@ async def create_relationship(
         f"Creating relationship: {from_member_id} -> {to_member_id} ({relation_type})"
     )
 
-    # --- Validation ---
     if from_member_id == to_member_id:
         logger.warning("Attempted to create self-relation.")
         raise InvalidRelationError("error_relation_self")
@@ -468,7 +411,6 @@ async def create_relationship(
     if not to_member:
         raise MemberNotFoundError(to_member_id)
 
-    # --- Creation ---
     new_relation_orm = Relation(
         from_member_id=from_member_id,
         to_member_id=to_member_id,
@@ -477,11 +419,10 @@ async def create_relationship(
 
     try:
         db.add(new_relation_orm)
-        await db.flush()  # Assigns ID
-        await db.refresh(new_relation_orm)  # Load defaults
+        await db.flush()
+        await db.refresh(new_relation_orm)
         await db.commit()
         logger.info(f"Successfully created relationship ID {new_relation_orm.id}")
-        # Return the Pydantic model
         return RelationRead.model_validate(new_relation_orm)
     except Exception as e:
         await db.rollback()
@@ -489,7 +430,7 @@ async def create_relationship(
             f"Database error creating relationship {from_member_id} -> {to_member_id}.",
             exc_info=True,
         )
-        raise e  # Re-raise for API layer
+        raise e
 
 
 async def delete_relationship(db: AsyncSession, relation_id: int) -> None:

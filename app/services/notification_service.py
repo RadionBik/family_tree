@@ -60,27 +60,23 @@ def send_email(subject: str, body: str, recipients: list[str], app_config=None) 
         True if the email was sent successfully to all recipients, False otherwise.
     """
     if app_config is None:
-        # Load config if not provided (e.g., when run from a script)
         config_name = os.getenv("APP_ENV", "development")
         app_config = config[config_name]
         logger.info(f"Loaded '{config_name}' configuration for email sending.")
 
-    # Check if mail server is configured
     if not app_config.MAIL_SERVER:
         logger.error("Mail server not configured. Cannot send email.")
         return False
 
     sender = app_config.MAIL_DEFAULT_SENDER
-    msg = MIMEText(body, "plain", "utf-8")  # Ensure UTF-8 encoding
+    msg = MIMEText(body, "plain", "utf-8")
     msg["Subject"] = subject
     msg["From"] = sender
-    # Join recipients for the 'To' header, but send individually later
     msg["To"] = ", ".join(recipients)
 
     logger.info(f"Attempting to send email. Subject: '{subject}', To: {recipients}")
 
     try:
-        # Use SMTP_SSL for implicit TLS (port 465) or SMTP for STARTTLS (port 587)
         if app_config.MAIL_PORT == 465:
             server = smtplib.SMTP_SSL(
                 app_config.MAIL_SERVER, app_config.MAIL_PORT, timeout=10
@@ -100,14 +96,11 @@ def send_email(subject: str, body: str, recipients: list[str], app_config=None) 
                 server.starttls()
                 logger.debug("TLS started.")
 
-        # Login if username and password are provided
         if app_config.MAIL_USERNAME and app_config.MAIL_PASSWORD:
             logger.debug(f"Logging in as {app_config.MAIL_USERNAME}...")
             server.login(app_config.MAIL_USERNAME, app_config.MAIL_PASSWORD)
             logger.debug("Login successful.")
 
-        # Send the email
-        # Note: sendmail sends to recipients individually, even if 'To' header lists multiple
         logger.debug("Sending email...")
         server.sendmail(sender, recipients, msg.as_string())
         logger.info(f"Email sent successfully to {recipients}.")

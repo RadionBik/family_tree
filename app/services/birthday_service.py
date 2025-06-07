@@ -13,18 +13,14 @@ logger = logging.getLogger(__name__)
 def calculate_next_birthday(birth_date: date, today: date) -> date:
     """Calculates the date of the next birthday."""
     try:
-        # Try this year's birthday
         next_bday = birth_date.replace(year=today.year)
-    except ValueError:  # Handles leap year birthdays (Feb 29th) on non-leap years
+    except ValueError:
         next_bday = birth_date.replace(year=today.year, day=28)
 
     if next_bday < today:
-        # If birthday has already passed this year, calculate for next year
         try:
             next_bday = birth_date.replace(year=today.year + 1)
-        except (
-            ValueError
-        ):  # Handle leap year birthday for next year if it's a leap year
+        except ValueError:
             next_bday = birth_date.replace(year=today.year + 1, day=28)
     return next_bday
 
@@ -57,17 +53,16 @@ async def get_upcoming_birthdays(
     end_date = today + timedelta(days=days)
 
     try:
-        # Query living members with birth dates
         stmt = select(FamilyMember).where(
             FamilyMember.birth_date.isnot(None),
-            FamilyMember.death_date.is_(None),  # Only include members who are alive
+            FamilyMember.death_date.is_(None),
         )
         result = await db.execute(stmt)
         members = result.scalars().all()
 
         upcoming = []
         for member in members:
-            if member.birth_date:  # Ensure birth_date is not None
+            if member.birth_date:
                 next_birthday = calculate_next_birthday(member.birth_date, today)
 
                 if today <= next_birthday <= end_date:
@@ -85,7 +80,6 @@ async def get_upcoming_birthdays(
                         )
                     )
 
-        # Sort by the upcoming birthday date
         upcoming.sort(key=lambda x: x.next_birthday_date)
 
         logger.info(f"Found {len(upcoming)} upcoming birthdays.")
@@ -113,7 +107,6 @@ async def get_todays_birthdays_for_notification(
     today = date.today()
 
     try:
-        # 1. Get active subscriber emails
         sub_stmt = select(SubscribedEmail.email).where(SubscribedEmail.is_active)
         sub_result = await db.execute(sub_stmt)
         subscriber_emails = sub_result.scalars().all()
@@ -122,10 +115,9 @@ async def get_todays_birthdays_for_notification(
             logger.info("No active subscribers found. No notifications will be sent.")
             return []
 
-        # 2. Get living members whose birthday is today
         bday_stmt = select(FamilyMember).where(
             FamilyMember.birth_date.isnot(None),
-            FamilyMember.death_date.is_(None),  # Only living members
+            FamilyMember.death_date.is_(None),
             extract("month", FamilyMember.birth_date) == today.month,
             extract("day", FamilyMember.birth_date) == today.day,
         )
@@ -138,15 +130,12 @@ async def get_todays_birthdays_for_notification(
 
         notifications = []
         for member in members_with_birthday_today:
-            # Calculate age they are turning today
             age = calculate_age(member.birth_date, today)
             notifications.append(
                 BirthdayNotificationInfo(
                     name=member.name,
                     age=age,
-                    subscriber_emails=list(
-                        subscriber_emails
-                    ),  # Convert Sequence to list
+                    subscriber_emails=list(subscriber_emails),
                 )
             )
 

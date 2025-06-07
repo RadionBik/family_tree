@@ -1,42 +1,35 @@
 import logging
-import os  # Need os for getenv
-from datetime import UTC, datetime, timedelta  # Use timezone-aware datetime
+import os
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
-
-# Use OAuth2PasswordBearer for token dependency
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jose import JWTError, jwt  # Import JWT handling
-from sqlalchemy import select  # Need select
+from jose import JWTError, jwt
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.admin_user import AdminUser  # Import AdminUser for type hinting
-
-# Import auth schemas, including TokenData
+from app.models.admin_user import AdminUser
 from app.schemas.auth import Token, TokenData, UserInfo
-from app.services import auth_service  # Import the auth service
-from app.services.auth_service import (  # Import custom exceptions
+from app.services import auth_service
+from app.services.auth_service import (
     InvalidCredentialsError,
     UserInactiveError,
     UserNotFoundError,
 )
 from app.utils.database import get_db_session
 from app.utils.localization import get_text
-from config import config  # Import config to access settings
+from config import config
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# Load JWT settings from config based on environment
 config_name = os.getenv("APP_ENV", "development")
 app_config = config[config_name]
 JWT_SECRET_KEY = app_config.JWT_SECRET_KEY
 JWT_ALGORITHM = app_config.JWT_ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = app_config.ACCESS_TOKEN_EXPIRE_MINUTES
 
-# OAuth2 scheme definition - points to the login endpoint URL
-# This tells FastAPI how to extract the token from the Authorization header
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")  # Corrected path
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
 async def get_user(db: AsyncSession, username: str) -> AdminUser | None:
@@ -55,17 +48,15 @@ async def get_current_user(
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail=get_text("auth_token_invalid"),  # Use localized message
+        detail=get_text("auth_token_invalid"),
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        # Decode the JWT token
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
-        username: str = payload.get("sub")  # 'sub' usually holds the username
+        username: str = payload.get("sub")
         if username is None:
             logger.warning("Token decoding failed: Username (sub) missing in payload.")
             raise credentials_exception
-        # Store payload data in Pydantic model for validation/structure (optional but good practice)
         token_data = TokenData(username=username)
     except JWTError as e:
         logger.warning(f"Token decoding failed: {e}")
@@ -112,13 +103,12 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
 
 @router.post(
     "/auth/login",
-    response_model=Token,  # Respond with a token
+    response_model=Token,
     summary="Admin Login",
     description="Authenticates an admin user and returns an access token.",
     tags=["Authentication"],
 )
 async def login_for_access_token(
-    # Use OAuth2PasswordRequestForm for standard username/password form data
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db_session),
 ):
@@ -128,17 +118,15 @@ async def login_for_access_token(
     """
     logger.info(f"Login attempt for username: {form_data.username}")
     try:
-        # Authenticate the user using the service function
         admin_user: AdminUser = await auth_service.authenticate_admin(
             db=db, username=form_data.username, password=form_data.password
         )
-        # If authentication is successful, create an access token
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
             data={
                 "sub": admin_user.username,
                 "role": admin_user.role,
-            },  # Include username and role in token payload
+            },
             expires_delta=access_token_expires,
         )
         logger.info(f"Login successful for user: {form_data.username}")
@@ -146,15 +134,12 @@ async def login_for_access_token(
 
     except (UserNotFoundError, InvalidCredentialsError, UserInactiveError) as e:
         logger.warning(f"Login failed for {form_data.username}: {e}")
-        # Use the localized message from the specific exception
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            # Return a generic message for all auth failures to prevent username enumeration
             detail=get_text("auth_invalid_credentials"),
             headers={"WWW-Authenticate": "Bearer"},
         )
     except Exception:
-        # Catch other potential errors from the service layer or token creation
         logger.exception(
             f"An unexpected error occurred during login for {form_data.username}.",
             exc_info=True,
@@ -165,16 +150,14 @@ async def login_for_access_token(
         )
 
 
-# --- Current User Endpoint ---
 @router.get(
     "/auth/me",
-    response_model=UserInfo,  # Return public user info, not the full model
+    response_model=UserInfo,
     summary="Get Current Admin User",
     description="Returns the details of the currently authenticated admin user.",
     tags=["Authentication"],
 )
 async def read_users_me(
-    # Use the dependency to ensure the user is active and authenticated
     current_user: AdminUser = Depends(get_current_active_user),
 ):
     """
@@ -182,8 +165,4 @@ async def read_users_me(
     Protected by the get_current_active_user dependency.
     """
     logger.info(f"Accessed /auth/me endpoint by user: {current_user.username}")
-    # Return the UserInfo schema, not the full AdminUser model with password hash etc.
     return current_user
-
-
-# Placeholder for logout (might involve token blocklisting if needed)

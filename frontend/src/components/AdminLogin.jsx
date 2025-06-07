@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import authService from "../services/authService"; // Import the auth service
+import authService from "../services/authService";
 
 const AdminLogin = ({ onLoginSuccess }) => {
   const { t } = useTranslation();
@@ -15,23 +15,18 @@ const AdminLogin = ({ onLoginSuccess }) => {
     setLoading(true);
 
     try {
-      // Call the login function from the auth service
-      const loginData = await authService.login(username, password); // loginData contains { access_token, token_type }
+      const loginData = await authService.login(username, password);
 
-      // On successful login:
       setMessage({
         type: "success",
         text: t("adminLogin.successMessage", "Login Successful!"),
       });
-      // Call the callback function passed via props, potentially passing token/user info
       if (onLoginSuccess) {
-        onLoginSuccess(loginData); // Pass token data back
+        onLoginSuccess(loginData);
       }
-      // Clear fields after a short delay to show success message
       setTimeout(() => {
         setUsername("");
         setPassword("");
-        // Optionally redirect here
       }, 1500);
     } catch (error) {
       let errorMessage = t(
@@ -39,19 +34,17 @@ const AdminLogin = ({ onLoginSuccess }) => {
         "Login failed. Please try again.",
       );
       if (error.response) {
-        // Use detail from API error response if available (e.g., invalid credentials)
         errorMessage = error.response.data?.detail || errorMessage;
-        // Specific handling for common auth errors (e.g., 401 Unauthorized)
         if (error.response.status === 401) {
           errorMessage =
             error.response.data?.detail ||
-            t("adminLogin.errorInvalid", "Invalid username or password."); // Add invalid key
+            t("adminLogin.errorInvalid", "Invalid username or password.");
         }
       } else if (error.request) {
         errorMessage = t(
           "adminLogin.errorNetwork",
           "Network error. Please check connection.",
-        ); // Add network error key
+        );
       }
       console.error(
         "Admin Login Error:",
@@ -71,10 +64,9 @@ const AdminLogin = ({ onLoginSuccess }) => {
           <label htmlFor="admin-username">
             {t("adminLogin.usernameLabel")}
           </label>{" "}
-          {/* Changed id */}
           <input
             type="text"
-            id="admin-username" // Changed id
+            id="admin-username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
@@ -85,10 +77,9 @@ const AdminLogin = ({ onLoginSuccess }) => {
           <label htmlFor="admin-password">
             {t("adminLogin.passwordLabel")}
           </label>{" "}
-          {/* Changed id */}
           <input
             type="password"
-            id="admin-password" // Changed id
+            id="admin-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -106,7 +97,6 @@ const AdminLogin = ({ onLoginSuccess }) => {
           {loading
             ? t("adminLogin.loggingInButton", "Logging in...")
             : t("adminLogin.loginButton")}{" "}
-          {/* Add loading button key */}
         </button>
       </form>
     </section>

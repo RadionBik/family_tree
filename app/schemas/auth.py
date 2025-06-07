@@ -31,4 +31,4 @@ class UserInfo(BaseModel):
     is_active: bool
 
     class Config:
-        from_attributes = True  # Enable ORM mode
+        from_attributes = True

@@ -24,7 +24,6 @@ async def main():
     while True:
         now = datetime.now()
 
-        # --- Run ingest_data_job every minute ---
         if (now - last_ingest_run).total_seconds() >= 600:
             logger.info("Triggering data ingestion job.")
             try:
@@ -33,8 +32,6 @@ async def main():
             except Exception as e:
                 logger.error(f"Error in ingest_data_job: {e}", exc_info=True)
 
-        # --- Run send_birthday_notifications_job daily at 08:00 ---
-        # Check if it's 8 AM and if it hasn't run today yet
         if now.time() >= time(8, 0) and now.date() > last_birthday_run.date():
             logger.info("Triggering birthday notification job.")
             try:
@@ -45,11 +42,8 @@ async def main():
                     f"Error in send_birthday_notifications_job: {e}", exc_info=True
                 )
 
-        # Sleep for a short interval to avoid busy-waiting
-        await asyncio.sleep(10)  # Check every 10 seconds
+        await asyncio.sleep(10)
 
 
 if __name__ == "__main__":
-    # It's good practice to load environment variables at the start
-    # This ensures that database connections and other configurations are set up correctly.
     asyncio.run(main())

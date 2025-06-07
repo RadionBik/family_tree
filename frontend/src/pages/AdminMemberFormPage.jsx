@@ -1,34 +1,30 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router-dom";
-import familyTreeService from "../services/familyTreeService"; // Import the service
-import RelationshipManager from "../components/RelationshipManager"; // Import the new component
+import familyTreeService from "../services/familyTreeService";
+import RelationshipManager from "../components/RelationshipManager";
 
 const AdminMemberFormPage = () => {
   const { t } = useTranslation();
-  const { id } = useParams(); // Get member ID from URL for editing
+  const { id } = useParams();
   const navigate = useNavigate();
   const isEditing = Boolean(id);
 
-  // Form state
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
-    middleName: "", // Отчество
+    middleName: "",
     birthDate: "",
     deathDate: "",
-    gender: "", // пол
-    location: "", // местоположение
-    bio: "", // биография
-    // Add other fields as needed (e.g., photos)
+    gender: "",
+    location: "",
+    bio: "",
   });
-  const [loading, setLoading] = useState(false); // General loading state (form submit, initial fetch)
+  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
-  // State for relationship data
   const [relationshipsFrom, setRelationshipsFrom] = useState([]);
   const [relationshipsTo, setRelationshipsTo] = useState([]);
 
-  // Helper function to parse name from backend (assuming "LastName FirstName MiddleName")
   const parseName = (fullName) => {
     if (!fullName) return { firstName: "", lastName: "", middleName: "" };
     const parts = fullName.split(" ");
@@ -38,29 +34,25 @@ const AdminMemberFormPage = () => {
     return { firstName, lastName, middleName };
   };
 
-  // Function to fetch member data (used in useEffect and after relationship change)
   const fetchMemberData = (memberId) => {
-    // Renamed id parameter to memberId to avoid conflict with useParams id
-    if (!memberId) return; // Only fetch if editing
+    if (!memberId) return;
 
     setLoading(true);
-    setMessage({ type: "", text: "" }); // Clear previous messages
+    setMessage({ type: "", text: "" });
     familyTreeService
       .getMemberByIdAdmin(memberId)
       .then((data) => {
-        // Map API data (backend names) to form state (frontend names)
         const { firstName, lastName, middleName } = parseName(data.name);
         setFormData({
           firstName: firstName,
           lastName: lastName,
           middleName: middleName,
-          birthDate: data.birth_date || "", // Handle null dates
-          deathDate: data.death_date || "", // Handle null dates
+          birthDate: data.birth_date || "",
+          deathDate: data.death_date || "",
           gender: data.gender || "",
           location: data.location || "",
-          bio: data.notes || "", // Map notes to bio
+          bio: data.notes || "",
         });
-        // Store relationship data
         setRelationshipsFrom(data.relationships_from || []);
         setRelationshipsTo(data.relationships_to || []);
       })
@@ -71,19 +63,17 @@ const AdminMemberFormPage = () => {
           text:
             err.response?.data?.detail ||
             t("adminMemberForm.errorFetch", "Failed to load member data."),
-        }); // Add error key
+        });
       })
       .finally(() => {
         setLoading(false);
       });
-    // REMOVED the incorrect else block from here
   };
 
   useEffect(() => {
     if (isEditing) {
-      fetchMemberData(id); // Pass the id from useParams
+      fetchMemberData(id);
     } else {
-      // Reset form and relationships for adding new member
       setFormData({
         firstName: "",
         lastName: "",
@@ -96,21 +86,16 @@ const AdminMemberFormPage = () => {
       });
       setRelationshipsFrom([]);
       setRelationshipsTo([]);
-      // Ensure loading is false when resetting for 'add new'
       setLoading(false);
-      setMessage({ type: "", text: "" }); // Clear any previous messages
+      setMessage({ type: "", text: "" });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, isEditing]); // Only re-run fetch/reset when ID or editing status changes
+  }, [id, isEditing]);
 
-  // Callback for RelationshipManager to trigger data refresh
   const handleRelationshipChange = (action, status) => {
     console.log(`Relationship action: ${action}, Status: ${status}`);
     if (status === "success") {
-      // Re-fetch the member data to get updated relationships
-      fetchMemberData(id); // Pass the id from useParams
+      fetchMemberData(id);
     }
-    // Message display is handled within RelationshipManager or here if needed
   };
 
   const handleChange = (e) => {
@@ -141,12 +126,10 @@ const AdminMemberFormPage = () => {
           text: t("adminMemberForm.addSuccess", "Member added successfully!"),
         });
       }
-      console.log("API Response:", response); // Log response for debugging
-      // Redirect back to list after a short delay
+      console.log("API Response:", response);
       setTimeout(() => navigate("/admin/members"), 1500);
     } catch (err) {
       console.error("Error saving member:", err);
-      // Display specific error from backend if available
       const errorMessage =
         err.response?.data?.detail ||
         t(
@@ -154,12 +137,10 @@ const AdminMemberFormPage = () => {
           "Failed to save member. Please try again.",
         );
       setMessage({ type: "error", text: errorMessage });
-      setLoading(false); // Keep form enabled on error
+      setLoading(false);
     }
-    // No finally setLoading(false) here because we redirect on success or keep form enabled on error
   };
 
-  // Show loading indicator only when fetching data for editing
   if (loading && isEditing) {
     return (
       <div>{t("adminMemberForm.loadingData", "Loading member data...")}</div>
@@ -174,7 +155,6 @@ const AdminMemberFormPage = () => {
           : t("adminMemberForm.addTitle", "Add New Family Member")}
       </h2>
       <form onSubmit={handleSubmit}>
-        {/* Basic Fields */}
         <div className="form-group">
           <label htmlFor="lastName">
             {t("adminMemberForm.lastNameLabel", "Фамилия")}
@@ -340,8 +320,6 @@ const AdminMemberFormPage = () => {
           ></textarea>
         </div>
 
-        {/* TODO: Add fields for photos, etc. */}
-
         {message.text && (
           <div
             className={`message ${message.type === "success" ? "message-success" : "message-error"}`}
@@ -367,10 +345,9 @@ const AdminMemberFormPage = () => {
         </button>
       </form>
 
-      {/* Conditionally render Relationship Manager only when editing */}
       {isEditing && id && (
         <RelationshipManager
-          memberId={parseInt(id, 10)} // Ensure ID is a number
+          memberId={parseInt(id, 10)}
           relationshipsFrom={relationshipsFrom}
           relationshipsTo={relationshipsTo}
           onRelationshipChange={handleRelationshipChange}

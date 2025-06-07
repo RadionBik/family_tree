@@ -1,7 +1,7 @@
 import logging
 import math  # For calculating total_pages
 
-from fastapi import (  # Added Query
+from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
@@ -11,21 +11,19 @@ from fastapi import (  # Added Query
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.auth import get_current_active_user  # Import the auth dependency
-from app.models.admin_user import AdminUser  # For dependency injection type hint
-
-# Import necessary schemas and models
+from app.api.auth import get_current_active_user
+from app.models.admin_user import AdminUser
 from app.schemas.family import (
     FamilyMemberCreate,
     FamilyMemberRead,
     FamilyMemberUpdate,
     MemberListDelete,
-    PaginatedFamilyMembersResponse,  # Added pagination response schema
+    PaginatedFamilyMembersResponse,
     RelationCreate,
     RelationRead,
 )
 from app.services import family_service
-from app.services.family_service import (  # Import custom exceptions
+from app.services.family_service import (
     InvalidRelationError,
     MemberNotFoundError,
     RelationNotFoundError,
@@ -38,48 +36,36 @@ router = APIRouter()
 
 
 @router.get(
-    "/family/tree",  # Corrected path to match frontend service call
-    response_model=list[
-        FamilyMemberRead
-    ],  # Specify the response schema (a list of members)
+    "/family/tree",
+    response_model=list[FamilyMemberRead],
     summary="Get Complete Family Tree",
     description="Retrieves all family members and their relationships.",
-    tags=["Family"],  # Tag for API documentation grouping
+    tags=["Family"],
 )
 async def get_family_tree(
-    db: AsyncSession = Depends(get_db_session),  # Inject async DB session
+    db: AsyncSession = Depends(get_db_session),
 ):
     """
     API endpoint to retrieve the entire family tree data.
     """
-    logger.info(
-        "Received request for /family/tree endpoint."
-    )  # Corrected log message path
+    logger.info("Received request for /family/tree endpoint.")
     try:
         logger.info("Attempting to call family_service.get_all_family_members...")
         family_members_orm = await family_service.get_all_family_members(db)
         logger.info(
             f"Successfully retrieved {len(family_members_orm)} members from service."
         )
-        # FastAPI automatically converts the list of ORM objects to a list of FamilyMemberRead Pydantic models
         logger.info("Returning family members data.")
         return family_members_orm
     except Exception as e:
-        # Log the specific error details
         logger.error(
             f"Error type: {type(e).__name__}, Error details: {e}", exc_info=True
         )
-        logger.exception(
-            "An unexpected error occurred while fetching the family tree."
-        )  # Keep original exception log too
-        # Raise a standard HTTPException which will be caught by our handler in main.py
+        logger.exception("An unexpected error occurred while fetching the family tree.")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=get_text("error_occurred"),  # Use localized error message
+            detail=get_text("error_occurred"),
         )
-
-
-# --- Admin Paginated List Endpoint ---
 
 
 @router.get(
@@ -92,11 +78,9 @@ async def get_family_tree(
 async def list_family_members(
     page: int = Query(1, ge=1, description="Page number (1-based)"),
     size: int = Query(10, ge=1, le=100, description="Items per page"),
-    search: str | None = Query(
-        None, description="Search term to filter by name"
-    ),  # Add search query param
+    search: str | None = Query(None, description="Search term to filter by name"),
     db: AsyncSession = Depends(get_db_session),
-    current_user: AdminUser = Depends(get_current_active_user),  # Protect route
+    current_user: AdminUser = Depends(get_current_active_user),
 ):
     """
     Admin endpoint to get a paginated list of family members, with optional search.
@@ -111,7 +95,7 @@ async def list_family_members(
             db=db,
             skip=skip,
             limit=limit,
-            search_term=search,  # Pass search term
+            search_term=search,
         )
         total_pages = math.ceil(total_items / size) if size > 0 else 0
 
@@ -129,11 +113,8 @@ async def list_family_members(
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=get_text("error_listing_members"),  # Add this key to locales
+            detail=get_text("error_listing_members"),
         )
-
-
-# --- Admin CRUD Endpoints for Individual Family Members ---
 
 
 @router.post(
@@ -147,7 +128,7 @@ async def list_family_members(
 async def create_family_member(
     member_data: FamilyMemberCreate,
     db: AsyncSession = Depends(get_db_session),
-    current_user: AdminUser = Depends(get_current_active_user),  # Protect route
+    current_user: AdminUser = Depends(get_current_active_user),
 ):
     """
     Admin endpoint to create a new family member.
@@ -170,7 +151,7 @@ async def create_family_member(
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=get_text("error_creating_member"),  # Add this key to locales
+            detail=get_text("error_creating_member"),
         )
 
 
@@ -184,7 +165,7 @@ async def create_family_member(
 async def get_family_member(
     member_id: int,
     db: AsyncSession = Depends(get_db_session),
-    current_user: AdminUser = Depends(get_current_active_user),  # Protect route
+    current_user: AdminUser = Depends(get_current_active_user),
 ):
     """
     Admin endpoint to get a specific family member.
@@ -204,7 +185,7 @@ async def get_family_member(
         )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=get_text("error_member_not_found"),  # Add this key to locales
+            detail=get_text("error_member_not_found"),
         )
     except Exception as e:
         logger.exception(
@@ -213,7 +194,7 @@ async def get_family_member(
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=get_text("error_fetching_member"),  # Add this key to locales
+            detail=get_text("error_fetching_member"),
         )
 
 
@@ -228,7 +209,7 @@ async def update_family_member(
     member_id: int,
     member_data: FamilyMemberUpdate,
     db: AsyncSession = Depends(get_db_session),
-    current_user: AdminUser = Depends(get_current_active_user),  # Protect route
+    current_user: AdminUser = Depends(get_current_active_user),
 ):
     """
     Admin endpoint to update a family member.
@@ -259,7 +240,7 @@ async def update_family_member(
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=get_text("error_updating_member"),  # Add this key to locales
+            detail=get_text("error_updating_member"),
         )
 
 
@@ -273,7 +254,7 @@ async def update_family_member(
 async def delete_family_member(
     member_id: int,
     db: AsyncSession = Depends(get_db_session),
-    current_user: AdminUser = Depends(get_current_active_user),  # Protect route
+    current_user: AdminUser = Depends(get_current_active_user),
 ):
     """
     Admin endpoint to delete a family member.
@@ -286,45 +267,37 @@ async def delete_family_member(
         logger.info(
             f"Successfully deleted member ID {member_id} by admin '{current_user.username}'"
         )
-        # Return Response with 204 status explicitly for clarity
         return Response(status_code=status.HTTP_204_NO_CONTENT)
     except MemberNotFoundError:
         logger.warning(
             f"Attempt to delete non-existent member ID {member_id} by admin '{current_user.username}'."
         )
-        # Even if not found, deletion is idempotent, so maybe don't raise 404?
-        # Let's raise 404 for consistency with GET/PUT.
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=get_text("error_member_not_found"),
         )
     except Exception as e:
-        # Consider specific exceptions, e.g., if deletion fails due to constraints
         logger.exception(
             f"Error deleting member ID {member_id} by admin '{current_user.username}': {e}",
             exc_info=True,
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=get_text("error_deleting_member"),  # Add this key to locales
+            detail=get_text("error_deleting_member"),
         )
-
-
-# --- Admin Batch Delete Endpoint ---
 
 
 @router.delete(
     "/family/members/batch",
-    status_code=status.HTTP_200_OK,  # Or 204 if we don't return count
+    status_code=status.HTTP_200_OK,
     summary="Batch Delete Family Members (Admin)",
     description="Deletes multiple family members based on a list of IDs. Requires admin authentication.",
     tags=["Family Admin"],
-    # Consider adding a response model if returning more details, e.g., {"deleted_count": int}
 )
 async def batch_delete_family_members(
-    delete_data: MemberListDelete,  # Get IDs from request body
+    delete_data: MemberListDelete,
     db: AsyncSession = Depends(get_db_session),
-    current_user: AdminUser = Depends(get_current_active_user),  # Protect route
+    current_user: AdminUser = Depends(get_current_active_user),
 ):
     """
     Admin endpoint to batch delete family members.
@@ -333,7 +306,7 @@ async def batch_delete_family_members(
     if not member_ids:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=get_text("error_batch_delete_empty_list"),  # Add this key
+            detail=get_text("error_batch_delete_empty_list"),
         )
 
     logger.info(
@@ -346,11 +319,10 @@ async def batch_delete_family_members(
         logger.info(
             f"Batch delete completed by admin '{current_user.username}'. Deleted {deleted_count} members."
         )
-        # Return the count of deleted items
         return {
             "deleted_count": deleted_count,
             "message": get_text("success_batch_delete", count=deleted_count),
-        }  # Add this key
+        }
     except Exception as e:
         logger.exception(
             f"Error during batch delete by admin '{current_user.username}': {e}",
@@ -358,11 +330,8 @@ async def batch_delete_family_members(
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=get_text("error_batch_delete_failed"),  # Add this key
+            detail=get_text("error_batch_delete_failed"),
         )
-
-
-# --- Admin CRUD Endpoints for Relationships ---
 
 
 @router.post(
@@ -376,7 +345,7 @@ async def batch_delete_family_members(
 async def create_relationship(
     relation_data: RelationCreate,
     db: AsyncSession = Depends(get_db_session),
-    current_user: AdminUser = Depends(get_current_active_user),  # Protect route
+    current_user: AdminUser = Depends(get_current_active_user),
 ):
     """
     Admin endpoint to create a new relationship.
@@ -396,10 +365,9 @@ async def create_relationship(
         logger.warning(
             f"Failed to create relationship by admin '{current_user.username}': {e}"
         )
-        # Use specific status codes if desired (e.g., 400 for InvalidRelationError)
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,  # Or 404 if MemberNotFound
-            detail=str(e),  # Use the exception's message (which should be localized)
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
         )
     except Exception as e:
         logger.exception(
@@ -408,7 +376,7 @@ async def create_relationship(
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=get_text("error_creating_relation"),  # Add this key to locales
+            detail=get_text("error_creating_relation"),
         )
 
 
@@ -422,7 +390,7 @@ async def create_relationship(
 async def delete_relationship(
     relation_id: int,
     db: AsyncSession = Depends(get_db_session),
-    current_user: AdminUser = Depends(get_current_active_user),  # Protect route
+    current_user: AdminUser = Depends(get_current_active_user),
 ):
     """
     Admin endpoint to delete a relationship.
@@ -442,7 +410,7 @@ async def delete_relationship(
         )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e),  # Use the exception's localized message
+            detail=str(e),
         )
     except Exception as e:
         logger.exception(
@@ -451,5 +419,5 @@ async def delete_relationship(
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=get_text("error_deleting_relation"),  # Add this key to locales
+            detail=get_text("error_deleting_relation"),
         )

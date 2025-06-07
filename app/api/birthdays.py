@@ -3,10 +3,10 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.schemas.birthday import UpcomingBirthdayRead  # Response schema
-from app.services import birthday_service  # Service function
-from app.utils.database import get_db_session  # DB session dependency
-from app.utils.localization import get_text  # Localization
+from app.schemas.birthday import UpcomingBirthdayRead
+from app.services import birthday_service
+from app.utils.database import get_db_session
+from app.utils.localization import get_text
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -17,7 +17,7 @@ router = APIRouter()
     response_model=list[UpcomingBirthdayRead],
     summary="Get Upcoming Birthdays",
     description="Retrieves family members with birthdays in the specified upcoming period.",
-    tags=["Birthdays"],  # Tag for API documentation grouping
+    tags=["Birthdays"],
 )
 async def get_upcoming_birthdays_endpoint(
     days: int = Query(
@@ -26,7 +26,7 @@ async def get_upcoming_birthdays_endpoint(
         le=365,
         description="Number of days ahead to check for birthdays (1-365).",
     ),
-    db: AsyncSession = Depends(get_db_session),  # Inject async DB session
+    db: AsyncSession = Depends(get_db_session),
 ):
     """
     API endpoint to retrieve upcoming birthdays.
@@ -38,9 +38,7 @@ async def get_upcoming_birthdays_endpoint(
             f"Successfully retrieved {len(upcoming_birthdays)} upcoming birthdays from service."
         )
         if not upcoming_birthdays:
-            # Optionally return a specific message or just an empty list
-            # return JSONResponse(status_code=status.HTTP_200_OK, content={"message": get_text("no_upcoming_birthdays")})
-            pass  # Return empty list by default
+            pass
         return upcoming_birthdays
     except Exception:
         logger.exception(
@@ -51,6 +49,3 @@ async def get_upcoming_birthdays_endpoint(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=get_text("error_occurred"),
         )
-
-
-# Add other birthday-related endpoints here later if needed

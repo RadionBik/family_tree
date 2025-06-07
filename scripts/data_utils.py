@@ -26,13 +26,11 @@ async def process_family_data(db: AsyncSession):
     """
     logger.info("Starting family data processing from Google Sheets")
 
-    # Get family data from Google Sheets
     csv_data = get_family_data_from_sheet()
     if not csv_data:
         logger.error("No data downloaded, exiting")
         return
 
-    # Parse CSV
     logger.info("Parsing CSV data")
     reader = csv.DictReader(io.StringIO(csv_data))
     members_data = []
@@ -53,7 +51,6 @@ async def process_family_data(db: AsyncSession):
         }
         members_data.append(member)
 
-        # Collect relationship data
         relationships.append(
             {
                 "member_id": member["id"],
@@ -64,16 +61,14 @@ async def process_family_data(db: AsyncSession):
         )
 
     try:
-        # Purge existing family data
         logger.info("Purging existing family data")
         await db.execute(text("DELETE FROM relations"))
         await db.execute(text("DELETE FROM family_members"))
         await db.flush()
 
         logger.info(f"Processing {len(members_data)} members from Google Sheet...")
-        members_cache = {}  # Cache member ID to DB ID mapping
+        members_cache = {}
 
-        # Create family members
         for member_data in members_data:
             member_id = member_data["id"]
             try:
@@ -103,13 +98,11 @@ async def process_family_data(db: AsyncSession):
 
         logger.info("Creating relationships...")
 
-        # Process relationships
         for rel_data in relationships:
             member_id = rel_data["member_id"]
             if member_id not in members_cache:
                 continue
 
-            # Create parent-child relationships
             for parent_type, parent_id in [
                 ("mother", rel_data["mother_id"]),
                 ("father", rel_data["father_id"]),
@@ -130,7 +123,6 @@ async def process_family_data(db: AsyncSession):
                             f"Failed to create {parent_type} relationship: {str(e)}"
                         )
 
-            # Create spouse relationship
             if rel_data["spouse_id"] and rel_data["spouse_id"] in members_cache:
                 try:
                     await create_relationship(

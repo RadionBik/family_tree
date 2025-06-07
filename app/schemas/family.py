@@ -5,11 +5,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.family_member import GenderEnum
 
-# Generic type variable for paginated items
 T = TypeVar("T")
 
 
-# --- Generic Pagination Schema ---
 class PaginatedResponse(BaseModel, Generic[T]):
     """Generic schema for paginated API responses."""
 
@@ -20,16 +18,12 @@ class PaginatedResponse(BaseModel, Generic[T]):
     total_pages: int = Field(..., description="Total number of pages.")
 
 
-# --- Relation Schemas ---
-
-
 class RelationBase(BaseModel):
     """Base schema for relation data (common fields)."""
 
     relation_type: str
     start_date: date | None = None
     end_date: date | None = None
-    # IDs will be handled separately or in specific context schemas
 
 
 class RelationRead(RelationBase):
@@ -38,11 +32,8 @@ class RelationRead(RelationBase):
     id: int
     from_member_id: str
     to_member_id: str
-    # We might include nested member info later if needed, but keep it simple for now
-    # from_member: 'FamilyMemberReadMinimal' # Forward reference
-    # to_member: 'FamilyMemberReadMinimal' # Forward reference
 
-    model_config = ConfigDict(from_attributes=True)  # Enable ORM mode
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RelationCreate(RelationBase):
@@ -50,10 +41,6 @@ class RelationCreate(RelationBase):
 
     from_member_id: str
     to_member_id: str
-    # relation_type, start_date, end_date are inherited from RelationBase
-
-
-# --- Family Member Schemas ---
 
 
 class FamilyMemberBase(BaseModel):
@@ -97,7 +84,7 @@ class FamilyMemberReadMinimal(FamilyMemberBase):
 
     id: str
 
-    model_config = ConfigDict(from_attributes=True)  # Enable ORM mode
+    model_config = ConfigDict(from_attributes=True)
 
 
 class FamilyMemberRead(FamilyMemberBase):
@@ -107,33 +94,19 @@ class FamilyMemberRead(FamilyMemberBase):
     name: str
     created_at: datetime
     updated_at: datetime
-    relationships_from: list[
-        RelationRead
-    ] = []  # List of relations where this member is 'from'
-    relationships_to: list[
-        RelationRead
-    ] = []  # List of relations where this member is 'to'
-    is_descendant: bool | None = (
-        None  # Flag indicating if the member is a direct descendant
-    )
+    relationships_from: list[RelationRead] = []
+    relationships_to: list[RelationRead] = []
+    is_descendant: bool | None = None
 
-    model_config = ConfigDict(from_attributes=True)  # Enable ORM mode
+    model_config = ConfigDict(from_attributes=True)
 
 
-# Update forward references if needed after all models are defined
-# This is often handled automatically by Pydantic v2, but explicit update_forward_refs might be needed in complex cases.
-# RelationRead.model_rebuild()
-# FamilyMemberRead.model_rebuild()
-
-
-# --- Specific Paginated Response for Family Members ---
 class PaginatedFamilyMembersResponse(PaginatedResponse[FamilyMemberRead]):
     """Paginated response specifically for FamilyMemberRead items."""
 
-    pass  # Inherits all fields from PaginatedResponse[FamilyMemberRead]
+    pass
 
 
-# --- Batch Operation Schemas ---
 class MemberListDelete(BaseModel):
     """Schema for deleting a list of members by their IDs."""
 
