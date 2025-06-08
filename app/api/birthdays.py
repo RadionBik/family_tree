@@ -3,6 +3,8 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.auth import get_current_active_user
+from app.models.admin_user import AdminUser
 from app.schemas.birthday import UpcomingBirthdayRead
 from app.services import birthday_service
 from app.utils.database import get_db_session
@@ -27,6 +29,7 @@ async def get_upcoming_birthdays_endpoint(
         description="Number of days ahead to check for birthdays (1-365).",
     ),
     db: AsyncSession = Depends(get_db_session),
+    _: AdminUser = Depends(get_current_active_user),
 ):
     """
     API endpoint to retrieve upcoming birthdays.
@@ -37,8 +40,6 @@ async def get_upcoming_birthdays_endpoint(
         logger.info(
             f"Successfully retrieved {len(upcoming_birthdays)} upcoming birthdays from service."
         )
-        if not upcoming_birthdays:
-            pass
         return upcoming_birthdays
     except Exception:
         logger.exception(

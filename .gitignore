@@ -31,7 +31,11 @@ tasks/
 
 venv
 *.db
-*.json
 source_data
+tree.json
+scripts/parsed_family_tree.json
+# GCP service-account key
+pet-you-*.json
 
 .env*
+!.env.example

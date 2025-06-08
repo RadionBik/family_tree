@@ -20,7 +20,7 @@ logger = logging.getLogger("google_sheets_utils")
 load_dotenv()
 
 
-def parse_sheet_date(date_str: str) -> date | None:
+def parse_sheet_date(date_str: str | None) -> date | None:
     """Parse date string from various formats into date object"""
     if not date_str:
         return None

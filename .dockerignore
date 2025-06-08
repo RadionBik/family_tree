@@ -1,45 +1,31 @@
-# Git files
 .git
 .gitignore
-
-# Docker files
 Dockerfile
-docker-compose.yml
+docker-compose*.yml
 .dockerignore
 
-# Python virtual environment
 venv/
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.ruff_cache/
+.pytest_cache/
 
-# OS generated files
 .DS_Store
-Thumbs.db
-
-# IDE / Editor specific files
 .idea/
 .vscode/
 *.swp
 
-# Log files
 logs/
 *.log
+db_data/
 
-# Test artifacts
-.pytest_cache/
-htmlcov/
-.coverage
+# Secrets are mounted at runtime, never baked into the image.
+.env*
+*.json
 
-# Database file (if managed outside container volume)
-# data/app.db # Keep this commented if using volume mount as in docker-compose
-
-# Environment files (should be passed via docker-compose, not copied)
-.env
-*.env
-
-# Frontend build artifacts / dependencies
-frontend/node_modules/
-frontend/dist/
-db_data
+frontend/
+tasks/
+.cursor/
+README-task-master.md

@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import FamilyTreeGraph from "./FamilyTreeGraph";
 import GraphLegend from "./GraphLegend";
 import familyTreeService from "../services/familyTreeService";
+import { ageOn, lifeYears } from "../utils/age";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -10,99 +11,93 @@ import Alert from "@mui/material/Alert";
 import Paper from "@mui/material/Paper";
 import Button from "@mui/material/Button";
 
-const transformDataForCytoscape = (members) => {
-  const elements = [];
-  const edgeIds = new Set();
-  const memberMap = new Map(members.map((m) => [String(m.id), m]));
+// Members -> Cytoscape elements. Every couple (or parent set) gets a small
+// "union" node: partners feed into it, children hang from it. That keeps
+// spouses on one row and gives siblings a single shared drop line.
+const buildElements = (members) => {
+  const ids = new Set(members.map((m) => m.id));
+  const nodes = members.map((m) => ({
+    data: {
+      id: m.id,
+      label: m.name,
+      display: [m.name, lifeYears(m.birth_date, m.death_date)]
+        .filter(Boolean)
+        .join("\n"),
+      gender: m.gender,
+      birth_date: m.birth_date,
+      death_date: m.death_date,
+      deceased: Boolean(m.death_date),
+      location: m.location,
+      notes: m.notes,
+    },
+  }));
 
-  members.forEach((member) => {
-    elements.push({
-      data: {
-        id: String(member.id),
-        label: member.name,
-        gender: member.gender,
-        birth_date: member.birth_date,
-        death_date: member.death_date,
-        notes: member.notes,
-        is_descendant: member.is_descendant,
-      },
-    });
-  });
-
-  members.forEach((member) => {
-    member.relationships_from.forEach((relation) => {
-      const edgeId = `rel-${relation.id}`;
-      const sourceId = String(relation.from_member_id);
-      const targetId = String(relation.to_member_id);
-      const sourceMember = memberMap.get(sourceId);
-
-      if (sourceMember) {
-        if (!edgeIds.has(edgeId) && relation.relation_type !== "CHILD") {
-          elements.push({
-            data: {
-              id: edgeId,
-              source: sourceId,
-              target: targetId,
-              label: relation.relation_type,
-            },
-          });
-          edgeIds.add(edgeId);
-        }
+  const parentsOf = new Map(); // child id -> Set(parent id)
+  const couples = new Set(); // "a|b", sorted
+  members.forEach((m) =>
+    m.relationships_from.forEach((r) => {
+      if (!ids.has(r.to_member_id)) return;
+      if (r.relation_type === "PARENT") {
+        if (!parentsOf.has(r.to_member_id))
+          parentsOf.set(r.to_member_id, new Set());
+        parentsOf.get(r.to_member_id).add(m.id);
+      } else if (r.relation_type === "SPOUSE") {
+        couples.add([m.id, r.to_member_id].sort().join("|"));
       }
+    }),
+  );
+
+  const edges = [];
+  const unions = new Set();
+  const union = (parentIds) => {
+    const id = `u|${[...parentIds].sort().join("|")}`;
+    if (!unions.has(id)) {
+      unions.add(id);
+      nodes.push({ data: { id, union: true } });
+      parentIds.forEach((p) =>
+        edges.push({
+          data: { id: `${p}>${id}`, source: p, target: id, kind: "partner" },
+        }),
+      );
+    }
+    return id;
+  };
+  couples.forEach((key) => union(key.split("|")));
+  parentsOf.forEach((parents, child) => {
+    const u = union(parents);
+    edges.push({
+      data: { id: `${u}>${child}`, source: u, target: child, kind: "child" },
     });
   });
-  return elements;
+  return [...nodes, ...edges];
 };
 
 const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
   const { t } = useTranslation();
-  const [elements, setElements] = useState([]);
+  const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const elements = useMemo(() => buildElements(members), [members]);
+
   const handleNodeClick = (nodeData) => {
-    console.log(
-      "Node clicked in FamilyTree, calling onMemberSelect:",
-      nodeData,
+    if (!onMemberSelect) return;
+    onMemberSelect(
+      nodeData && nodeData.id !== selectedMemberId ? nodeData.id : null,
     );
-    if (onMemberSelect) {
-      onMemberSelect(selectedMemberId === nodeData?.id ? null : nodeData?.id);
-    }
   };
 
   useEffect(() => {
     let isMounted = true;
-    const fetchData = async () => {
-      if (isMounted) {
-        setLoading(true);
-        setError(null);
-      }
-      try {
-        const familyData = await familyTreeService.getFamilyTreeData();
-        console.log("Fetched family data:", familyData);
-        if (isMounted) {
-          if (Array.isArray(familyData)) {
-            const transformedElements = transformDataForCytoscape(familyData);
-            setElements(transformedElements);
-          } else {
-            console.error("Fetched data is not an array:", familyData);
-            setError(t("familyTree.errorInvalidData"));
-            setElements([]);
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching or transforming family tree data:", err);
-        if (isMounted) {
-          setError(t("familyTree.errorLoading"));
-          setElements([]);
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-    fetchData();
+    familyTreeService
+      .getFamilyTreeData()
+      .then((data) => {
+        if (!isMounted) return;
+        if (Array.isArray(data)) setMembers(data);
+        else setError(t("familyTree.errorInvalidData"));
+      })
+      .catch(() => isMounted && setError(t("familyTree.errorLoading")))
+      .finally(() => isMounted && setLoading(false));
     return () => {
       isMounted = false;
     };
@@ -110,106 +105,47 @@ const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
 
   const renderMemberDetails = () => {
     if (!selectedMemberId) return null;
-
-    const memberElement = elements.find(
-      (el) => el.data.id === String(selectedMemberId),
-    );
-    const memberData = memberElement?.data;
-
-    if (!memberData) {
-      console.warn(
-        `Member data not found in elements for ID: ${selectedMemberId}`,
-      );
-      return null;
-    }
+    const m = members.find((x) => x.id === selectedMemberId);
+    if (!m) return null;
 
     const placeholder = t("common.noData", "No data");
-
-    let ageString = placeholder;
-    if (memberData.birth_date) {
-      try {
-        const birthDate = new Date(memberData.birth_date);
-        const endDate = memberData.death_date
-          ? new Date(memberData.death_date)
-          : new Date();
-
-        if (!isNaN(birthDate.getTime())) {
-          let age = endDate.getFullYear() - birthDate.getFullYear();
-          const monthDiff = endDate.getMonth() - birthDate.getMonth();
-          if (
-            monthDiff < 0 ||
-            (monthDiff === 0 && endDate.getDate() < birthDate.getDate())
-          ) {
-            age--;
-          }
-
-          if (age >= 0) {
-            ageString = t("years", "{{count}} years", { count: age });
-
-            if (memberData.death_date) {
-              ageString += ` ${t("ageAtDeathSuffix", "(at time of death)")}`;
-            }
-          } else {
-            console.warn(`Calculated negative age for node ${memberData.id}`);
-            ageString = t("invalidDate", "Invalid date");
-          }
-        } else {
-          console.warn(
-            `Invalid birth date format for node ${memberData.id}: ${memberData.birth_date}`,
-          );
-          ageString = t("invalidDate", "Invalid date");
-        }
-      } catch (e) {
-        console.error(`Error calculating age for node ${memberData.id}:`, e);
-        ageString = t("ageCalculationError", "Error");
-      }
-    }
+    const age = ageOn(m.birth_date, m.death_date);
+    const ageString =
+      age === null
+        ? placeholder
+        : `${t("years", "{{count}} years", { count: age })}${
+            m.death_date
+              ? ` ${t("ageAtDeathSuffix", "(at time of death)")}`
+              : ""
+          }`;
+    const rows = [
+      [t("name", "Name"), m.name],
+      [t("birthDate", "Born"), m.birth_date || placeholder],
+      [t("deathDate", "Died"), m.death_date || placeholder],
+      [
+        t("genderLabel", "Gender"),
+        m.gender
+          ? t(`gender.${m.gender.toLowerCase()}`, m.gender)
+          : placeholder,
+      ],
+      [t("ageLabel", "Age"), ageString],
+      [t("locationLabel", "Location"), m.location || placeholder],
+      m.notes ? [t("notes", "Notes"), m.notes] : null,
+    ].filter(Boolean);
 
     return (
       <Paper elevation={1} sx={{ marginTop: 3, padding: 2 }}>
         <Typography variant="h6" gutterBottom>
           {t("familyTree.detailsTitle", "Details")}
         </Typography>
-        <Typography variant="body1" gutterBottom>
-          <Typography component="span" fontWeight="bold">
-            {t("name", "Name")}:
-          </Typography>{" "}
-          {memberData.label || placeholder}
-        </Typography>
-        <Typography variant="body1" gutterBottom>
-          <Typography component="span" fontWeight="bold">
-            {t("birthDate", "Born")}:
-          </Typography>{" "}
-          {memberData.birth_date || placeholder}
-        </Typography>
-        <Typography variant="body1" gutterBottom>
-          <Typography component="span" fontWeight="bold">
-            {t("deathDate", "Died")}:
-          </Typography>{" "}
-          {memberData.death_date || placeholder}
-        </Typography>
-        <Typography variant="body1" gutterBottom>
-          <Typography component="span" fontWeight="bold">
-            {t("genderLabel", "Gender")}:
-          </Typography>{" "}
-          {memberData.gender
-            ? t(`gender.${memberData.gender.toLowerCase()}`, memberData.gender)
-            : placeholder}
-        </Typography>
-        <Typography variant="body1" gutterBottom>
-          <Typography component="span" fontWeight="bold">
-            {t("ageLabel", "Age")}:
-          </Typography>{" "}
-          {ageString}
-        </Typography>
-        {memberData.notes && (
-          <Typography variant="body1" gutterBottom>
+        {rows.map(([label, value]) => (
+          <Typography key={label} variant="body1" gutterBottom>
             <Typography component="span" fontWeight="bold">
-              {t("notes", "Notes")}:
+              {label}:
             </Typography>{" "}
-            {memberData.notes}{" "}
+            {value}
           </Typography>
-        )}
+        ))}
         <Button
           variant="outlined"
           size="small"
@@ -243,14 +179,12 @@ const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
         <>
           <Box
             sx={{
-              height: "500px",
+              height: "min(75vh, 800px)",
+              minHeight: 400,
               border: "1px solid",
               borderColor: "divider",
               mb: 2,
-              position: "relative",
-              width: "100%",
               overflow: "hidden",
-              boxSizing: "border-box",
             }}
           >
             <FamilyTreeGraph
@@ -259,10 +193,7 @@ const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
               selectedNodeId={selectedMemberId}
             />
           </Box>
-          <Box sx={{ pl: 1 }}>
-            {" "}
-            <GraphLegend />
-          </Box>
+          <GraphLegend />
         </>
       )}
       {!loading && !error && elements.length === 0 && (

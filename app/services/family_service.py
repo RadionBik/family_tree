@@ -1,6 +1,5 @@
 import logging
 import uuid
-from collections import deque  # Use deque for BFS queue
 
 from sqlalchemy import func, select  # Import func for count
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -53,93 +52,17 @@ class InvalidRelationError(Exception):
 
 
 async def get_all_family_members(db: AsyncSession) -> list[FamilyMemberRead]:
-    """
-    Fetches all family members from the database with their relationships preloaded,
-    calculates the 'is_descendant' flag based on parent-child relationships
-    starting from root nodes within the dataset.
-
-    Args:
-        db: The asynchronous database session.
-
-    Returns:
-        A list of FamilyMemberRead Pydantic models, including the calculated
-        'is_descendant' flag.
-    """
-    logger.info("Fetching all family members from database.")
-    try:
-        stmt = (
-            select(FamilyMember)
-            .options(
-                selectinload(FamilyMember.relationships_from).selectinload(
-                    Relation.from_member
-                ),
-                selectinload(FamilyMember.relationships_from).selectinload(
-                    Relation.to_member
-                ),
-                selectinload(FamilyMember.relationships_to).selectinload(
-                    Relation.from_member
-                ),
-                selectinload(FamilyMember.relationships_to).selectinload(
-                    Relation.to_member
-                ),
-            )
-            .order_by(FamilyMember.id)
+    """All members with their relations, for the public tree."""
+    stmt = (
+        select(FamilyMember)
+        .options(
+            selectinload(FamilyMember.relationships_from),
+            selectinload(FamilyMember.relationships_to),
         )
-        result = await db.execute(stmt)
-        family_members_orm = result.unique().scalars().all()
-        logger.info(f"Successfully fetched {len(family_members_orm)} family members.")
-
-        if not family_members_orm:
-            return []
-
-        members_dict: dict[int, FamilyMember] = {m.id: m for m in family_members_orm}
-        child_map: dict[int, set[int]] = {m_id: set() for m_id in members_dict}
-        for member in family_members_orm:
-            for rel in member.relationships_from:
-                if rel.relation_type == RelationTypeEnum.PARENT:
-                    if rel.to_member_id in members_dict:
-                        child_map[member.id].add(rel.to_member_id)
-
-        if not members_dict:
-            primary_root_ids = set()
-        else:
-            min_id = min(members_dict.keys())
-            primary_root_ids = {min_id}
-
-        logger.debug(
-            f"Identified primary root member(s) (heuristic - lowest ID): {primary_root_ids}"
-        )
-
-        descendant_ids: set[int] = set()
-        if primary_root_ids:
-            descendant_ids.update(primary_root_ids)
-            queue = deque(primary_root_ids)
-            while queue:
-                current_id = queue.popleft()
-                children = child_map.get(current_id, set())
-                for child_id in children:
-                    if child_id in members_dict and child_id not in descendant_ids:
-                        descendant_ids.add(child_id)
-                        queue.append(child_id)
-
-        logger.debug(
-            f"Identified descendant members (IDs) from primary root(s): {descendant_ids}"
-        )
-
-        family_members_read: list[FamilyMemberRead] = []
-        for member in family_members_orm:
-            member_read = FamilyMemberRead.model_validate(member)
-            member_read.is_descendant = member.id in descendant_ids
-            family_members_read.append(member_read)
-
-        logger.debug(
-            f"Family members Pydantic data with is_descendant flag being returned: {family_members_read}"
-        )
-        return family_members_read
-
-    except Exception as e:
-        logger.exception("Error fetching or processing family members.", exc_info=True)
-        raise e
+        .order_by(FamilyMember.id)
+    )
+    members = (await db.execute(stmt)).scalars().all()
+    return [FamilyMemberRead.model_validate(m) for m in members]
 
 
 async def get_paginated_family_members(
@@ -228,9 +151,7 @@ async def get_member_by_id(db: AsyncSession, member_id: int) -> FamilyMemberRead
         raise MemberNotFoundError(member_id=member_id)
 
     logger.info(f"Successfully fetched member ID {member_id}.")
-    member_read = FamilyMemberRead.model_validate(member_orm)
-    member_read.is_descendant = None
-    return member_read
+    return FamilyMemberRead.model_validate(member_orm)
 
 
 async def create_family_member(

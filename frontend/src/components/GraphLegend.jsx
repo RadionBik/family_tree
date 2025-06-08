@@ -1,83 +1,97 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import { GRAPH } from "../graphTheme";
 
-const LegendItem = ({ color, shape, label }) => {
-  const shapeStyle = {
-    width: "20px",
-    height: "20px",
-    backgroundColor: color,
-    display: "inline-block",
-    marginRight: "8px",
-    verticalAlign: "middle",
-    borderRadius:
-      shape === "ellipse" ? "50%" : shape === "rectangle" ? "0" : "4px",
-  };
-  return (
-    <div style={{ marginBottom: "5px" }}>
-      <span style={shapeStyle}></span>
-      <span>{label}</span>
-    </div>
-  );
-};
+const Card = ({ colors, dashed }) => (
+  <Box
+    component="span"
+    sx={{
+      width: 22,
+      height: 14,
+      borderRadius: "4px",
+      bgcolor: colors.bg,
+      border: `2px ${dashed ? "dashed" : "solid"} ${colors.border}`,
+      display: "inline-block",
+      mr: 1,
+      verticalAlign: "middle",
+    }}
+  />
+);
 
-const EdgeLegendItem = ({ lineStyle, arrow, color = "#ccc", label }) => {
-  const lineExampleStyle = {
-    width: "30px",
-    height: "2px",
-    borderTop: `2px ${lineStyle} ${color}`,
-    display: "inline-block",
-    marginRight: "8px",
-    verticalAlign: "middle",
-    position: "relative",
-  };
-  const arrowStyle = {
-    content: '""',
-    position: "absolute",
-    right: "-4px",
-    top: "-5px",
-    border: `solid ${color}`,
-    borderWidth: "0 2px 2px 0",
-    display: "inline-block",
-    padding: "3px",
-    transform: "rotate(-45deg)",
-  };
-  return (
-    <div style={{ marginBottom: "5px" }}>
-      <span style={lineExampleStyle}>
-        {arrow && <span style={arrowStyle}></span>}
-      </span>
-      <span>{label}</span>
-    </div>
-  );
-};
+const Line = ({ color, arrow }) => (
+  <Box
+    component="span"
+    sx={{
+      width: 28,
+      borderTop: `2px solid ${color}`,
+      display: "inline-block",
+      mr: 1,
+      verticalAlign: "middle",
+      position: "relative",
+      "&::after": arrow
+        ? {
+            content: '""',
+            position: "absolute",
+            right: -2,
+            top: -5,
+            borderTop: `4px solid transparent`,
+            borderBottom: `4px solid transparent`,
+            borderLeft: `6px solid ${color}`,
+          }
+        : undefined,
+    }}
+  />
+);
+
+const Dot = () => (
+  <Box
+    component="span"
+    sx={{
+      width: 8,
+      height: 8,
+      borderRadius: "50%",
+      bgcolor: GRAPH.union,
+      display: "inline-block",
+      mr: 1,
+      ml: "7px",
+      verticalAlign: "middle",
+    }}
+  />
+);
 
 const GraphLegend = () => {
   const { t } = useTranslation();
-
+  const items = [
+    { swatch: <Card colors={GRAPH.male} />, label: t("legend.male", "Man") },
+    {
+      swatch: <Card colors={GRAPH.female} />,
+      label: t("legend.female", "Woman"),
+    },
+    {
+      swatch: <Card colors={GRAPH.unknown} dashed />,
+      label: t("legend.deceased", "Deceased"),
+    },
+    { swatch: <Dot />, label: t("legend.union", "Couple / parents") },
+    {
+      swatch: <Line color={GRAPH.partnerEdge} />,
+      label: t("legend.partner", "Partner"),
+    },
+    {
+      swatch: <Line color={GRAPH.childEdge} arrow />,
+      label: t("legend.child", "Child"),
+    },
+  ];
   return (
-    <div
-      className="graph-legend"
-      style={{
-        marginTop: "20px",
-        padding: "15px",
-        border: "1px solid #eee",
-        backgroundColor: "#f9f9f9",
-      }}
-    >
-      <h4>{t("familyTree.edgeLegendTitle", "Edge Types")}</h4>{" "}
-      <EdgeLegendItem
-        lineStyle="solid"
-        arrow={true}
-        color="#28a745"
-        label={t("relationType.parent-child", "Parent-Child")}
-      />
-      <EdgeLegendItem
-        lineStyle="dashed"
-        arrow={false}
-        color="#fd7e14"
-        label={t("relationType.spouse", "Spouse")}
-      />
-    </div>
+    <Box sx={{ display: "flex", flexWrap: "wrap", gap: "6px 20px", px: 1 }}>
+      {items.map(({ swatch, label }) => (
+        <Typography key={label} variant="body2" component="span">
+          {swatch}
+          {label}
+        </Typography>
+      ))}
+    </Box>
   );
 };
 

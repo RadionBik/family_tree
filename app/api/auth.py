@@ -88,6 +88,17 @@ async def get_current_active_user(
     return current_user
 
 
+async def require_admin(
+    current_user: AdminUser = Depends(get_current_active_user),
+) -> AdminUser:
+    """Admin-only routes. The shared viewer account must not reach them."""
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=get_text("auth_forbidden")
+        )
+    return current_user
+
+
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     """Helper function to create a JWT access token."""
     to_encode = data.copy()

@@ -1,326 +1,190 @@
-import React, { useEffect, useRef, useMemo } from "react";
+import React, { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import CytoscapeComponent from "react-cytoscapejs";
 import cytoscape from "cytoscape";
 import elk from "cytoscape-elk";
-import ELK from "elkjs/lib/elk.bundled.js";
 import $ from "jquery";
 import qtip from "cytoscape-qtip";
 import "qtip2/dist/jquery.qtip.min.css";
+import { GRAPH } from "../graphTheme";
+import { ageOn } from "../utils/age";
 
 cytoscape.use(elk);
 qtip(cytoscape, $);
+
+const STYLESHEET = [
+  {
+    selector: "node",
+    style: {
+      shape: "round-rectangle",
+      width: "label",
+      height: "label",
+      padding: "8px",
+      "background-color": GRAPH.unknown.bg,
+      "border-width": 2,
+      "border-color": GRAPH.unknown.border,
+      label: "data(display)",
+      "text-wrap": "wrap",
+      "text-max-width": "160px",
+      "text-valign": "center",
+      "text-halign": "center",
+      "font-size": "11px",
+      "line-height": 1.25,
+      color: GRAPH.text,
+    },
+  },
+  {
+    selector: 'node[gender="MALE"]',
+    style: {
+      "background-color": GRAPH.male.bg,
+      "border-color": GRAPH.male.border,
+    },
+  },
+  {
+    selector: 'node[gender="FEMALE"]',
+    style: {
+      "background-color": GRAPH.female.bg,
+      "border-color": GRAPH.female.border,
+    },
+  },
+  {
+    selector: "node[?deceased]",
+    style: {
+      "background-color": GRAPH.deceasedBg,
+      "border-style": "dashed",
+      color: GRAPH.mutedText,
+    },
+  },
+  // Union = a couple or a parent set; the point children hang from.
+  {
+    selector: "node[?union]",
+    style: {
+      shape: "ellipse",
+      width: 8,
+      height: 8,
+      padding: 0,
+      label: "",
+      "background-color": GRAPH.union,
+      "border-width": 0,
+    },
+  },
+  {
+    selector: "edge",
+    style: {
+      width: 1.5,
+      "curve-style": "taxi",
+      "taxi-direction": "downward",
+      "line-color": GRAPH.childEdge,
+      "target-arrow-shape": "none",
+    },
+  },
+  {
+    selector: 'edge[kind="partner"]',
+    style: { "line-color": GRAPH.partnerEdge, width: 2 },
+  },
+  {
+    selector: 'edge[kind="child"]',
+    style: {
+      "target-arrow-shape": "triangle",
+      "target-arrow-color": GRAPH.childEdge,
+      "arrow-scale": 0.8,
+    },
+  },
+  {
+    selector: "node.focus",
+    style: { "border-width": 4, "border-color": GRAPH.focus, "z-index": 10 },
+  },
+  { selector: ".dim", style: { opacity: 0.15 } },
+];
+
+const LAYOUT = {
+  name: "elk",
+  fit: true,
+  padding: 30,
+  elk: {
+    algorithm: "layered",
+    "elk.direction": "DOWN",
+    "elk.layered.spacing.nodeNodeBetweenLayers": "45",
+    "elk.spacing.nodeNode": "25",
+    "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
+  },
+};
 
 const FamilyTreeGraph = ({ elements, onNodeClick, selectedNodeId }) => {
   const { t } = useTranslation();
   const containerRef = useRef(null);
   const cyRef = useRef(null);
-  const isMounted = useRef(true);
-
-  const stylesheet = useMemo(
-    () => [
-      {
-        selector: "node",
-        style: {
-          "background-color": "#aaa",
-          label: "data(label)",
-          width: "label",
-          height: "label",
-          padding: "10px",
-          shape: "round-rectangle",
-          "text-valign": "center",
-          "text-halign": "center",
-          color: "#fff",
-          "text-outline-width": 2,
-          "text-outline-color": "#888",
-          "font-size": "12px",
-        },
-      },
-      {
-        selector: 'node[gender="male"]',
-        style: {
-          "background-color": "#6CBEEB",
-          shape: "rectangle",
-        },
-      },
-      {
-        selector: 'node[gender="female"]',
-        style: {
-          "background-color": "#F7A6C4",
-          shape: "ellipse",
-        },
-      },
-      {
-        selector: "edge",
-        style: {
-          width: 2,
-          "line-color": "#ccc",
-          "curve-style": "bezier",
-          "font-size": "10px",
-          color: "#555",
-          "text-rotation": "autorotate",
-          "text-margin-y": -10,
-        },
-      },
-      {
-        selector: 'edge[label="PARENT"]',
-        style: {
-          "target-arrow-shape": "triangle",
-          "target-arrow-color": "#28a745",
-          "line-color": "#28a745",
-          "line-style": "solid",
-        },
-      },
-      {
-        selector: 'edge[label="SPOUSE"]',
-        style: {
-          "line-style": "dashed",
-          "target-arrow-shape": "none",
-          "line-color": "#fd7e14",
-        },
-      },
-      {
-        selector: "node:selected",
-        style: {
-          "border-width": 3,
-          "border-color": "#DAA520",
-        },
-      },
-      {
-        selector: "node.highlighted-node",
-        style: {
-          "border-width": 5,
-          "border-color": "#ff0000",
-          "border-opacity": 0.8,
-          "shadow-blur": 10,
-          "shadow-color": "#ff0000",
-          "shadow-opacity": 0.6,
-          "z-index": 999,
-        },
-      },
-    ],
-    [],
-  );
-
-  const layout = useMemo(
-    () => ({
-      name: "elk",
-      fit: true,
-      padding: 50,
-      elk: {
-        algorithm: "layered",
-        "elk.direction": "DOWN",
-        "elk.layered.spacing.nodeNodeBetweenLayers": "80",
-        "elk.spacing.nodeNode": "40",
-        "elk.layered.nodePlacement.favorStraightEdges": "true",
-        "elk.layered.compaction.postCompaction.strategy": "EDGE_LENGTH",
-        "elk.separateConnectedComponents": "false",
-        "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
-        "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
-      },
-    }),
-    [],
-  );
+  // Read through a ref so a new callback identity does not rebuild the graph.
+  const onNodeClickRef = useRef(onNodeClick);
+  onNodeClickRef.current = onNodeClick;
 
   useEffect(() => {
-    if (!containerRef.current) {
-      console.log("Container ref not ready");
-      return;
-    }
-
-    console.log("Initializing Cytoscape directly...");
-
-    if (cyRef.current) {
-      console.log("Destroying previous Cytoscape instance.");
-      cyRef.current.nodes().forEach((node) => {
-        const qtipApi = node.scratch("_qtip");
-        if (qtipApi) {
-          qtipApi.destroy(true);
-        }
-      });
-      cyRef.current.destroy();
-      cyRef.current = null;
-    }
-
     const cy = cytoscape({
       container: containerRef.current,
-      elements: CytoscapeComponent.normalizeElements(elements || []),
-      style: stylesheet,
-      layout: { name: "preset" },
-      minZoom: 0.5,
-      maxZoom: 2,
+      elements,
+      style: STYLESHEET,
+      minZoom: 0.1,
+      maxZoom: 3,
+      wheelSensitivity: 0.3,
     });
-
     cyRef.current = cy;
 
-    const runLayoutAndTooltips = () => {
-      console.log("Setting up qTips...");
-
-      cy.nodes().forEach((node) => {
-        const nodeData = node.data();
-        if (typeof node.qtip !== "function") {
-          console.error(
-            `node.qtip is not a function for node ${node.id()}. Check registration.`,
-          );
-          return;
-        }
-
-        const placeholder = t("common.noData", "No data");
-
-        let ageString = placeholder;
-        if (nodeData.birth_date) {
-          try {
-            const birthDate = new Date(nodeData.birth_date);
-            const endDate = nodeData.death_date
-              ? new Date(nodeData.death_date)
-              : new Date();
-
-            if (!isNaN(birthDate.getTime())) {
-              let age = endDate.getFullYear() - birthDate.getFullYear();
-              const monthDiff = endDate.getMonth() - birthDate.getMonth();
-              if (
-                monthDiff < 0 ||
-                (monthDiff === 0 && endDate.getDate() < birthDate.getDate())
-              ) {
-                age--;
-              }
-
-              if (age >= 0) {
-                ageString = t("years", "{{count}} years", { count: age });
-                if (nodeData.death_date) {
-                  ageString += ` ${t("ageAtDeathSuffix", "(at time of death)")}`;
-                }
-              } else {
-                console.warn(`Calculated negative age for node ${nodeData.id}`);
-                ageString = t("invalidDate", "Invalid date");
-              }
-            } else {
-              console.warn(
-                `Invalid birth date format for node ${nodeData.id}: ${nodeData.birth_date}`,
-              );
-              ageString = t("invalidDate", "Invalid date");
-            }
-          } catch (e) {
-            console.error(`Error calculating age for node ${nodeData.id}:`, e);
-            ageString = t("ageCalculationError", "Error");
-          }
-        }
-
-        let tooltipLabel = nodeData.label || `ID: ${node.id()}`;
-        let tooltipHTML = `<strong>${tooltipLabel}</strong>`;
-        tooltipHTML += `<br/>${t("birthDate", "Born")}: ${nodeData.birth_date || placeholder}`;
-        tooltipHTML += `<br/>${t("deathDate", "Died")}: ${nodeData.death_date || placeholder}`;
-        tooltipHTML += `<br/>${t("genderLabel", "Gender")}: ${nodeData.gender ? t(`gender.${nodeData.gender.toLowerCase()}`, nodeData.gender) : placeholder}`;
-        tooltipHTML += `<br/>${t("ageLabel", "Age")}: ${ageString}`;
-
-        node.qtip({
-          content: tooltipHTML,
-          position: { my: "bottom center", at: "top center", target: node },
-          style: { classes: "qtip-bootstrap", tip: { width: 16, height: 8 } },
-          show: { event: "mouseover", solo: true },
-          hide: { event: "mouseout unfocus", fixed: true, delay: 100 },
-        });
+    const placeholder = t("common.noData", "No data");
+    cy.nodes("[!union]").forEach((node) => {
+      const d = node.data();
+      const age = ageOn(d.birth_date, d.death_date);
+      const rows = [
+        `<strong>${d.label}</strong>`,
+        `${t("birthDate", "Born")}: ${d.birth_date || placeholder}`,
+        d.death_date ? `${t("deathDate", "Died")}: ${d.death_date}` : null,
+        age !== null
+          ? `${t("ageLabel", "Age")}: ${t("years", "{{count}} years", { count: age })}${
+              d.death_date
+                ? ` ${t("ageAtDeathSuffix", "(at time of death)")}`
+                : ""
+            }`
+          : null,
+        d.location ? `${t("locationLabel", "Location")}: ${d.location}` : null,
+      ].filter(Boolean);
+      node.qtip({
+        content: rows.join("<br/>"),
+        position: { my: "bottom center", at: "top center", target: node },
+        style: { classes: "qtip-bootstrap", tip: { width: 16, height: 8 } },
+        show: { event: "mouseover", solo: true },
+        hide: { event: "mouseout unfocus", fixed: true, delay: 100 },
       });
-      console.log("qTips setup complete.");
+    });
 
-      console.log("Running ELK layout...");
-      const elkLayout = cy.layout(layout);
-
-      elkLayout.one("layoutstop", () => {
-        if (!isMounted.current) {
-          console.log(
-            "Layout stopped, but component unmounted. Skipping unlock.",
-          );
-          return;
-        }
-        console.log("Layout stopped, unlocking nodes...");
-        cy.nodes().forEach((node) => {
-          node.unlock();
-        });
-        console.log("Nodes unlock attempted after layout.");
-      });
-
-      elkLayout.run();
-    };
-
-    const timeoutId = setTimeout(runLayoutAndTooltips, 50);
-
-    const handleNodeTap = (event) => {
-      const tappedNode = event.target;
-      const nodeData = tappedNode.data();
-      console.log("Node tapped:", nodeData);
-
-      cy.nodes().forEach((n) => {
-        const qtipApi = n.scratch("_qtip");
-        if (qtipApi) {
-          qtipApi.hide();
-        }
-      });
-
-      tappedNode.addClass("tapped-node");
-      setTimeout(() => {
-        tappedNode.removeClass("tapped-node");
-      }, 300);
-
-      if (onNodeClick) {
-        onNodeClick(nodeData);
-      }
-    };
-    cy.on("tap", "node", handleNodeTap);
-
-    cy.style()
-      .selector(".tapped-node")
-      .style({
-        "background-color": "#ffcc00",
-        "transition-duration": "0.1s",
-        "transition-property": "background-color",
-      })
-      .update();
+    cy.on("tap", "node[!union]", (e) =>
+      onNodeClickRef.current?.(e.target.data()),
+    );
+    cy.on("tap", (e) => {
+      if (e.target === cy) onNodeClickRef.current?.(null);
+    });
+    cy.layout(LAYOUT).run();
 
     return () => {
-      console.log("Cleaning up Cytoscape instance and listeners...");
-      isMounted.current = false;
-      clearTimeout(timeoutId);
-      if (cyRef.current) {
-        cyRef.current.off("tap", "node", handleNodeTap);
-        cyRef.current.nodes().forEach((node) => {
-          const qtipApi = node.scratch("_qtip");
-          if (qtipApi) {
-            qtipApi.destroy(true);
-          }
-        });
-        cyRef.current.destroy();
-        cyRef.current = null;
-        console.log("Cytoscape instance destroyed.");
-      }
+      cy.nodes().forEach((n) => n.scratch("_qtip")?.destroy(true));
+      cy.destroy();
+      cyRef.current = null;
     };
-  }, [elements, onNodeClick, layout, stylesheet]);
+  }, [elements, t]);
 
   useEffect(() => {
     const cy = cyRef.current;
     if (!cy) return;
-
-    cy.nodes().removeClass("highlighted-node");
-
-    if (selectedNodeId) {
-      const selectedNode = cy.getElementById(String(selectedNodeId));
-      if (selectedNode.length > 0) {
-        selectedNode.addClass("highlighted-node");
-        console.log(`Highlighting node: ${selectedNodeId}`);
-      } else {
-        console.log(
-          `Node with ID ${selectedNodeId} not found for highlighting.`,
-        );
-      }
-    }
+    cy.elements().removeClass("dim focus");
+    if (!selectedNodeId) return;
+    const node = cy.getElementById(String(selectedNodeId));
+    if (node.empty()) return;
+    // Keep the person, their unions, and everyone attached to those unions.
+    const near = node.closedNeighborhood();
+    const keep = near.union(near.nodes("[?union]").closedNeighborhood());
+    node.addClass("focus");
+    cy.elements().not(keep).addClass("dim");
+    cy.animate({ center: { eles: node }, duration: 300 });
   }, [selectedNodeId]);
 
-  return (
-    <div
-      ref={containerRef}
-      style={{ width: "100%", height: "600px", border: "1px solid #ddd" }}
-    />
-  );
+  return <div ref={containerRef} style={{ width: "100%", height: "100%" }} />;
 };
 
 export default FamilyTreeGraph;
