@@ -1,4 +1,4 @@
-FROM node:18-alpine AS build
+FROM node:22-alpine AS build
 
 # Declare the build argument so it can be received from docker-compose
 ARG VITE_API_BASE_URL
