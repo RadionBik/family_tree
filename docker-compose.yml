@@ -46,10 +46,10 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        # This ensures the frontend knows how to reach the backend API.
+        VITE_API_BASE_URL: /api
     container_name: family_tree_frontend
-    environment:
-      # This ensures the frontend knows how to reach the backend API.
-      VITE_API_BASE_URL: /api
     ports:
       - "443:443"
     depends_on:

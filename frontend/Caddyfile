@@ -10,18 +10,20 @@ rbik.site {
 	encode gzip
 	# Set the root directory for your static files
 	# This should match where you copy your built assets in the Dockerfile
-	root * /srv
+	# Handle API requests first. If a request matches /api/*, this block
+	# will handle it and stop processing, preventing conflicts with the file_server.
+	handle /api/* {
+		uri strip_suffix /
+		reverse_proxy http://backend:8000
+	}
 
-	# Serve static files
-	file_server
-
-	# Reverse proxy for API calls to the backend service
-	reverse_proxy /api/* http://backend:8000
-
-	# Handle Single Page Application (SPA) routing
-	# If a requested file isn't found, serve index.html
-	# so React Router can handle the route.
-	try_files {path} {path}/ /index.html
+	# Handle all other requests (the frontend SPA). This block will only be
+	# reached if the request did not match /api/*.
+	handle {
+		root * /srv
+		try_files {path} {path}/ /index.html
+		file_server
+	}
 
 	# Optional: Add some basic security headers
 	header {
