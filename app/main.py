@@ -55,7 +55,6 @@ if app_config.DEBUG:
     stream_handler.setLevel(logging.DEBUG)
     file_handler.setLevel(logging.DEBUG)
 
-logging.getLogger("apscheduler").setLevel(logging.DEBUG)
 
 check_production_vars(app_config, logger)
 

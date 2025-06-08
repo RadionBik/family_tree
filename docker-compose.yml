@@ -39,21 +39,25 @@ services:
       - ./logs:/app/logs
       - ./db_data:/db_data
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      disable: true
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        # This ensures the frontend knows how to reach the backend API.
+        VITE_API_BASE_URL: /api
     container_name: family_tree_frontend
-    environment:
-      # This ensures the frontend knows how to reach the backend API.
-      VITE_API_BASE_URL: /api
     ports:
       - "443:443"
     depends_on:
-      - backend # Optional, depends if frontend needs backend at build time (it doesn't here)
+      backend:
+        condition: service_healthy
     restart: unless-stopped
     volumes:
       - caddy_data:/data
