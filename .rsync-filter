@@ -1,0 +1,13 @@
+# rsync --delete --filter='merge .rsync-filter'. "-" not sent, "P" kept on the server.
+- .git/
+- node_modules/
+- venv/
+- __pycache__/
+- *.pyc
+- .ruff_cache/
+- frontend/dist/
+- .vite/
+P /.env*
+P /*.json
+P /db_data/
+P /logs/

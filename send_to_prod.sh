@@ -1,3 +1,8 @@
 #!/bin/bash
-
-rsync -rtlvz -e "ssh -p 2442" --exclude="venv" --exclude=".git" --exclude="db_data" --exclude=".ruff_cache" --exclude="*.pyc" --exclude="__pycache__" --exclude="logs" --exclude="node_modules" --exclude="tasks" --exclude="tree.json" . radion@rbik.site:~/family_tree
+# Manual deploy; CI does the same on every merge to main. Needs VPS_HOST, VPS_PORT, VPS_USER (read from .env_prod).
+set -eu
+set -a; source .env_prod; set +a
+make prod-build
+docker save family_tree-backend family_tree-frontend | gzip | ssh -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" 'gunzip | docker load'
+rsync -rtlz --delete --filter='merge .rsync-filter' -e "ssh -p $VPS_PORT" ./ "$VPS_USER@$VPS_HOST:~/family_tree/"
+ssh -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" 'cd ~/family_tree && make prod'

@@ -23,11 +23,10 @@ Sheet columns: required `id`, `first_name`; optional `last_name`, `birth_date`, 
 
 ## Deploy
 
-- `send_to_prod.sh` rsyncs the working tree (including `.env_prod` and the Google service-account key) to `~/family_tree` on the VPS; then `make prod` there.
-- The VPS runs one shared Caddy (`~/web-app`, docker network `caddy-vps`) for every project. `docker-compose.prod.yml` puts the frontend container on that network; the host `~/web-app/Caddyfile` needs a `family.rbik.site { reverse_proxy family_tree_frontend:80 }` block and DNS. Nothing here binds host ports.
-- Backend container runs as UID/GID 1000: bind-mounted `db_data/` and `logs/` must be writable by that user.
-- The service-account key is mounted read-only via `${GOOGLE_SERVICE_ACCOUNT_FILE}`, not copied into the image (`.dockerignore` drops `*.json` and `.env*`).
-- `.env_prod` is used both as compose `--env-file` (interpolation, needs `UID`/`GID`) and as the container `env_file`. A `$` inside a secret triggers "variable is not set" warnings from compose interpolation.
+- `deploy` job in `.github/workflows/ci.yml`: on push to `main` after CI, builds both images on the runner, ships them with `docker save | ssh docker load`, rsyncs the tree (`.rsync-filter` protects server-side `.env*`, `*.json`, `db_data/`, `logs/`) and runs `make prod` (`docker compose up -d`, no build). Secrets: `VPS_HOST`, `VPS_PORT`, `VPS_USER`, `VPS_SSH_KEY`. `send_to_prod.sh` is the manual equivalent.
+- The host runs one shared Caddy on docker network `caddy-vps`; `docker-compose.prod.yml` attaches the frontend to it. The host Caddyfile needs `<subdomain> { reverse_proxy family_tree_frontend:80 }`.
+- Backend container runs as UID/GID 1000; bind-mounted `db_data/` and `logs/` must be writable by it. `.env_prod` and the service-account key exist only on the server (`.dockerignore` drops `.env*`, `*.json`; the key is mounted read-only via `${GOOGLE_SERVICE_ACCOUNT_FILE}`).
+- `.env_prod` is both compose `--env-file` (needs `UID`/`GID`) and container `env_file`; a `$` inside a secret triggers compose interpolation warnings.
 
 ## Conventions
 

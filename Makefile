@@ -1,9 +1,9 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
-.PHONY: help setup test lint run-backend run-frontend dev prod seed clean
+.PHONY: help setup test lint run-backend run-frontend dev prod prod-build seed clean
 
-DEV  = docker-compose --env-file .env_local -f docker-compose.yml -f docker-compose.dev.yml
-PROD = docker-compose --env-file .env_prod  -f docker-compose.yml -f docker-compose.prod.yml
+DEV  = docker compose --env-file .env_local -f docker-compose.yml -f docker-compose.dev.yml
+PROD = docker compose --env-file .env_prod  -f docker-compose.yml -f docker-compose.prod.yml
 COMPOSE ?= $(PROD)
 
 help:  ## list targets
@@ -30,8 +30,11 @@ run-frontend: setup  ## local Vite on :5173
 dev:  ## docker dev stack with hot reload (.env_local)
 	$(DEV) up --build -d
 
-prod:  ## docker prod stack behind the host Caddy (.env_prod)
-	$(PROD) up --build -d
+prod:  ## (re)start the prod stack from the images CI shipped (.env_prod)
+	$(PROD) up -d --remove-orphans
+
+prod-build:  ## build the prod images locally; CI does this on every deploy
+	$(PROD) build
 
 seed:  ## seed admin/viewer users and run the first ingest (COMPOSE=$(DEV) for dev)
 	$(COMPOSE) exec backend python -m scripts.seed_db

@@ -22,15 +22,7 @@ make help
 
 ## Deploy
 
-The VPS has one shared Caddy that owns ports 80/443 for all projects. This project publishes no host ports; the host Caddy proxies a subdomain to the frontend container:
-
-```
-family.rbik.site {
-    reverse_proxy family_tree_frontend:80
-}
-```
-
-Deploy = `./send_to_prod.sh` (rsync), then `make prod` on the server. Migrations run on container start.
+Every merge to `main` runs CI and then deploys to the VPS over ssh (repo secrets `VPS_HOST`, `VPS_PORT`, `VPS_USER`, `VPS_SSH_KEY`). The stack publishes no host ports; the host Caddy proxies a subdomain to `family_tree_frontend:80`.
 
 ## License
 
