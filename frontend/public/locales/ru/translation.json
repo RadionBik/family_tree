@@ -23,7 +23,8 @@
     "edgeLegendTitle": "Типы связей",
     "errorLoading": "Не удалось загрузить семейное древо.",
     "errorInvalidData": "Сервер вернул неверные данные.",
-    "noData": "Данных пока нет."
+    "noData": "Данных пока нет.",
+    "searchPlaceholder": "Поиск по имени"
   },
   "subscriptionForm": {
     "title": "Тут можно подписаться на уведомления о днях рождениях",
@@ -62,12 +63,13 @@
   "locationLabel": "Место",
   "years": "{{count}} лет",
   "ageAtDeathSuffix": "(на момент смерти)",
-  "legend": {
-    "male": "Мужчина",
-    "female": "Женщина",
-    "deceased": "Умер(ла)",
-    "union": "Пара / родители",
-    "partner": "Супруг(а)",
-    "child": "Ребёнок"
-  }
+  "middleName": "Отчество",
+  "maidenName": "Девичья фамилия",
+  "birthPlace": "Место рождения",
+  "profession": "Профессия",
+  "contacts": "Контакты",
+  "phone": "Телефон",
+  "telegram": "Telegram",
+  "vk": "ВКонтакте",
+  "instagram": "Instagram"
 }

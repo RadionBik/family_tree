@@ -12,6 +12,19 @@ from scripts.google_sheets_utils import get_family_data_from_sheet, parse_sheet_
 
 logger = logging.getLogger(__name__)
 
+# Optional sheet columns copied verbatim into the same-named model fields.
+TEXT_COLUMNS = (
+    "middle_name",
+    "maiden_name",
+    "birth_place",
+    "profession",
+    "photo_url",
+    "phone",
+    "telegram",
+    "vk",
+    "instagram",
+)
+
 
 def _clean(value) -> str | None:
     value = value.strip() if isinstance(value, str) else ""
@@ -35,7 +48,7 @@ def parse_rows(rows) -> tuple[list[FamilyMember], list[Relation]]:
     mother_id/father_id, spouse links from spouse_id (one edge per pair).
     """
     members: dict[str, FamilyMember] = {}
-    links: list[tuple[str, str | None, str | None, str | None]] = []
+    links: list[tuple] = []  # id, mother, father, spouse, marriage, divorce
     for row in rows:
         member_id = _clean(row.get("id"))
         first_name = _clean(row.get("first_name"))
@@ -54,6 +67,7 @@ def parse_rows(rows) -> tuple[list[FamilyMember], list[Relation]]:
             gender=_gender(_clean(row.get("gender"))),
             location=_clean(row.get("location")),
             notes=_clean(row.get("notes")),
+            **{col: _clean(row.get(col)) for col in TEXT_COLUMNS},
         )
         links.append(
             (
@@ -61,13 +75,15 @@ def parse_rows(rows) -> tuple[list[FamilyMember], list[Relation]]:
                 _clean(row.get("mother_id")),
                 _clean(row.get("father_id")),
                 _clean(row.get("spouse_id")),
+                parse_sheet_date(_clean(row.get("marriage_date"))),
+                parse_sheet_date(_clean(row.get("divorce_date"))),
             )
         )
 
     relations: list[Relation] = []
     seen: set[tuple] = set()
 
-    def link(src: str, dst: str, kind: RelationTypeEnum) -> None:
+    def link(src: str, dst: str, kind: RelationTypeEnum, **dates) -> None:
         if src not in members or dst not in members:
             logger.warning(f"{kind.value} {src} -> {dst}: unknown id, skipped")
             return
@@ -79,15 +95,21 @@ def parse_rows(rows) -> tuple[list[FamilyMember], list[Relation]]:
             return
         seen.add(key)
         relations.append(
-            Relation(from_member_id=src, to_member_id=dst, relation_type=kind)
+            Relation(from_member_id=src, to_member_id=dst, relation_type=kind, **dates)
         )
 
-    for member_id, mother, father, spouse in links:
+    for member_id, mother, father, spouse, married, divorced in links:
         for parent in (mother, father):
             if parent:
                 link(parent, member_id, RelationTypeEnum.PARENT)
         if spouse:
-            link(member_id, spouse, RelationTypeEnum.SPOUSE)
+            link(
+                member_id,
+                spouse,
+                RelationTypeEnum.SPOUSE,
+                start_date=married,
+                end_date=divorced,
+            )
 
     return list(members.values()), relations
 

@@ -57,7 +57,9 @@ This project uses environment files to manage configuration for different enviro
 
 ## How data flows
 
-The Google Sheet is the source of truth. The `scheduler` container re-reads it every 10 minutes and replaces `family_members` and `relations` in one transaction (see `scripts/data_utils.py`). Edits made anywhere else are overwritten on the next run.
+The Google Sheet is the source of truth. The `scheduler` container re-reads it every 10 minutes and replaces `family_members` and `relations` in one transaction (see `scripts/data_utils.py`). Edits made anywhere else are overwritten on the next run. Required sheet columns: `id`, `first_name`; the optional ones (dates, parents, spouse, photo, contacts) are the names read in `parse_rows` in `scripts/data_utils.py`.
+
+The tree on the home page is drawn with [family-chart](https://github.com/donatso/family-chart); `frontend/src/utils/chartData.js` maps API members to its input format.
 
 All `/api/*` routes except the health check `/` require a login token. Two accounts are seeded by `scripts/seed_db.py`: `admin` (role `admin`) and the shared viewer account (role `viewer`). Only `admin` can reach the `/api/family/members*` and `/api/family/relationships*` routes.
 

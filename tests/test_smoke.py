@@ -18,11 +18,11 @@ from app.models.relation import RelationTypeEnum  # noqa: E402
 from app.utils.database import AsyncSessionFactory, Base, async_engine  # noqa: E402
 from scripts.data_utils import parse_rows  # noqa: E402
 
-SHEET = """id,first_name,last_name,birth_date,gender,mother_id,father_id,spouse_id
-a,Anna,Ivanova,1950-02-01,female,,,b
-b,Boris,Ivanov,1948-05-09,male,,,a
-c,Chris,Ivanov,1975-12-24,unicorn,a,b,
-d,Dima,Ivanov,,,a,zzz,
+SHEET = """id,first_name,last_name,birth_date,gender,mother_id,father_id,spouse_id,marriage_date,photo_url,telegram
+a,Anna,Ivanova,1950-02-01,female,,,b,1972-06-10,https://x/a.jpg,@anna
+b,Boris,Ivanov,1948-05-09,male,,,a,,,
+c,Chris,Ivanov,1975-12-24,unicorn,a,b,,,,
+d,Dima,Ivanov,,,a,zzz,,,,
 """
 
 
@@ -30,6 +30,10 @@ def test_parse_rows_dedupes_spouses_and_skips_unknown_ids():
     members, relations = parse_rows(csv.DictReader(io.StringIO(SHEET)))
     assert [m.id for m in members] == ["a", "b", "c", "d"]
     assert members[2].gender is None  # bad value tolerated
+    assert (members[0].photo_url, members[0].telegram) == ("https://x/a.jpg", "@anna")
+    assert members[1].photo_url is None
+    marriage = next(r for r in relations if r.relation_type is RelationTypeEnum.SPOUSE)
+    assert str(marriage.start_date) == "1972-06-10"
     edges = {(r.relation_type, r.from_member_id, r.to_member_id) for r in relations}
     assert edges == {
         (RelationTypeEnum.SPOUSE, "a", "b"),  # one edge, not two
