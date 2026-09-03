@@ -65,6 +65,16 @@ All `/api/*` routes except the health check `/` require a login token. Two accou
 
 ## Deploy notes
 
+The VPS runs one shared Caddy (`~/web-app`, network `caddy-vps`) that owns ports 80/443 for every project. This project does not bind host ports. `docker-compose.prod.yml` attaches the frontend container to `caddy-vps`, and the host Caddyfile needs one block:
+
+```
+family.rbik.site {
+    reverse_proxy family_tree_frontend:80
+}
+```
+
+plus a DNS A record for `family.rbik.site`. The frontend container serves the built SPA and proxies `/api/*` to the backend, so the backend stays internal. Leave `CORS_ORIGIN` unset in `.env_prod`: API and page are same-origin.
+
 - The backend container runs as UID/GID 1000 (`HOST_UID`/`HOST_GID` build args), so the bind-mounted `db_data/` and `logs/` directories on the host must be writable by that user: `sudo chown -R 1000:1000 db_data logs`.
 - `alembic upgrade head` runs on container start (`docker-entrypoint.sh`); no manual migration step is needed after a deploy.
 - The Google service-account key named in `GOOGLE_SERVICE_ACCOUNT_FILE` is mounted read-only from the project directory, not copied into the image. It must exist on the host next to `docker-compose.yml`.
@@ -91,8 +101,8 @@ This project supports two Docker environments: Development (DEV) for local devel
   - `make docker-migrate-dev`: Runs database migrations in the DEV Docker container.
   - `make docker-seed-dev`: Executes the database seed script in the DEV Docker container.
 
-- **PROD Environment (HTTP):**
-  - `make run-docker-prod`: Builds and runs the application in PROD mode. The application will be available at `http://localhost`.
+- **PROD Environment:**
+  - `make run-docker-prod`: Builds and runs backend, scheduler and frontend. Nothing is published on host ports; the host Caddy proxies a subdomain to the frontend container (see "Deploy notes").
   - `make docker-migrate-prod`: Runs database migrations in the PROD Docker container.
   - `make docker-seed-prod`: Executes the database seed script in the PROD Docker container.
 
