@@ -15,7 +15,6 @@ services:
       DATABASE_URL: sqlite+aiosqlite:////db_data/app.db
       APP_ENV: ${APP_ENV:-production} # Default to production if not set
     volumes:
-      - ./logs:/app/logs
       - ./db_data:/db_data
       - ./${GOOGLE_SERVICE_ACCOUNT_FILE}:/app/${GOOGLE_SERVICE_ACCOUNT_FILE}:ro
     # No database dependency needed for SQLite
@@ -32,7 +31,6 @@ services:
       DATABASE_URL: sqlite+aiosqlite:////db_data/app.db
       APP_ENV: ${APP_ENV:-production}
     volumes:
-      - ./logs:/app/logs
       - ./db_data:/db_data
       - ./${GOOGLE_SERVICE_ACCOUNT_FILE}:/app/${GOOGLE_SERVICE_ACCOUNT_FILE}:ro
     depends_on:

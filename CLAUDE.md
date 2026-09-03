@@ -25,7 +25,7 @@ Sheet columns: required `id`, `first_name`; optional `last_name`, `birth_date`, 
 
 - `deploy` job in `.github/workflows/ci.yml`: on push to `main` after CI, builds both images on the runner, ships them with `docker save | ssh docker load`, rsyncs the tree (`.rsync-filter` protects server-side `.env*`, `*.json`, `db_data/`, `logs/`) and runs `make prod` (`docker compose up -d`, no build). Secrets: `VPS_HOST`, `VPS_PORT`, `VPS_USER`, `VPS_SSH_KEY`. `send_to_prod.sh` is the manual equivalent.
 - The host runs one shared Caddy on docker network `caddy-vps`; `docker-compose.prod.yml` attaches the frontend to it. The host Caddyfile needs `<subdomain> { reverse_proxy family_tree_frontend:80 }`.
-- Backend container runs as UID/GID 1000; bind-mounted `db_data/` and `logs/` must be writable by it. `.env_prod` and the service-account key exist only on the server (`.dockerignore` drops `.env*`, `*.json`; the key is mounted read-only via `${GOOGLE_SERVICE_ACCOUNT_FILE}`).
+- Backend container runs as UID/GID 1000; the bind-mounted `db_data/` must be writable by it. Logs go to stdout only (`docker logs`). `.env_prod` and the service-account key exist only on the server (`.dockerignore` drops `.env*`, `*.json`; the key is mounted read-only via `${GOOGLE_SERVICE_ACCOUNT_FILE}`).
 - `.env_prod` is both compose `--env-file` (needs `UID`/`GID`) and container `env_file`; a `$` inside a secret triggers compose interpolation warnings.
 
 ## Conventions

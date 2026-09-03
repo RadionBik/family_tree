@@ -1,7 +1,6 @@
 import contextlib
 import logging
 import os
-from logging.handlers import RotatingFileHandler
 
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -24,35 +23,12 @@ config_name = os.getenv("APP_ENV", "development")
 app_config = config[config_name]
 
 
-log_dir = "logs"
-if not os.path.exists(log_dir):
-    os.makedirs(log_dir)
-
-log_file = os.path.join(log_dir, "family_tree.log")
-
-file_handler = RotatingFileHandler(log_file, maxBytes=5 * 1024 * 1024, backupCount=5)
-file_handler.setFormatter(
-    logging.Formatter(
-        "%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]"
-    )
+# Stdout only; the container runtime keeps the logs.
+logging.basicConfig(
+    level=logging.DEBUG if app_config.DEBUG else logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
-file_handler.setLevel(logging.INFO)
-
-stream_handler = logging.StreamHandler()
-stream_handler.setFormatter(
-    logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-)
-stream_handler.setLevel(logging.INFO)
-
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-logger.addHandler(file_handler)
-logger.addHandler(stream_handler)
-
-if app_config.DEBUG:
-    logger.setLevel(logging.DEBUG)
-    stream_handler.setLevel(logging.DEBUG)
-    file_handler.setLevel(logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 check_production_vars(app_config, logger)
