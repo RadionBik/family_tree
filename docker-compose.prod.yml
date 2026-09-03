@@ -1,0 +1,11 @@
+# Prod override: the frontend joins the host Caddy's network so the host Caddy
+# can reverse_proxy to family_tree_frontend:80. Nothing is published on host ports.
+services:
+  frontend:
+    networks:
+      - default
+      - caddy-vps
+
+networks:
+  caddy-vps:
+    external: true

@@ -1,39 +1,22 @@
-{
-	# Tell Caddy to order directives in a specific way for clarity
-	order encode before respond
-}
-
-# This will be the address Caddy listens on inside the container.
-# Your docker-compose.yml maps host port 80 to this.
-rbik.site {
-	# Enable Brotli and Gzip compression
+# Serves the built SPA and proxies /api to the backend. Plain HTTP on :80:
+# TLS and the public hostname are handled by the host Caddy in front of it
+# (see README, "Deploy notes").
+:80 {
 	encode gzip
-	# Set the root directory for your static files
-	# This should match where you copy your built assets in the Dockerfile
-	# Handle API requests first. If a request matches /api/*, this block
-	# will handle it and stop processing, preventing conflicts with the file_server.
+
 	handle /api/* {
-		uri strip_suffix /
 		reverse_proxy http://backend:8000
 	}
 
-	# Handle all other requests (the frontend SPA). This block will only be
-	# reached if the request did not match /api/*.
 	handle {
 		root * /srv
-		try_files {path} {path}/ /index.html
+		try_files {path} /index.html
 		file_server
 	}
 
-	# Optional: Add some basic security headers
 	header {
-		# Prevent clickjacking
 		X-Frame-Options "SAMEORIGIN"
-		# Prevent MIME-type sniffing
 		X-Content-Type-Options "nosniff"
-		# Enable XSS protection (though modern browsers often handle this)
-		# X-XSS-Protection "1; mode=block"
-		# Control referrer policy
 		Referrer-Policy "strict-origin-when-cross-origin"
 	}
 }

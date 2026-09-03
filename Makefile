@@ -71,7 +71,7 @@ build: docker-compose.yml Dockerfile frontend/Dockerfile
 	docker-compose build
 
 # Build and run with Docker Compose (Dev mode - HTTPS)
-run-docker: .env_local docker-compose.yml docker-compose.dev.yml Dockerfile frontend/Dockerfile frontend/Caddyfile.dev
+run-docker: .env_local docker-compose.yml docker-compose.dev.yml Dockerfile frontend/Dockerfile.dev
 	@echo "Stopping existing Docker containers..."
 	@docker-compose -f docker-compose.yml -f docker-compose.dev.yml down --remove-orphans || true
 	@echo "Building and running Docker containers for DEV (HTTPS)..."
@@ -80,12 +80,13 @@ run-docker: .env_local docker-compose.yml docker-compose.dev.yml Dockerfile fron
 
 # Build and run with Docker Compose (Prod mode - HTTP)
 ENV_FILE ?= .env_prod
-run-docker-prod: .env_prod docker-compose.yml Dockerfile frontend/Dockerfile frontend/Caddyfile
+PROD_COMPOSE = docker-compose --env-file $(ENV_FILE) -f docker-compose.yml -f docker-compose.prod.yml
+run-docker-prod: .env_prod docker-compose.yml docker-compose.prod.yml Dockerfile frontend/Dockerfile frontend/Caddyfile
 	@echo "Stopping existing Docker containers..."
-	@docker-compose --env-file $(ENV_FILE) down --remove-orphans || true
-	@echo "Building and running Docker containers for PROD (HTTP)..."
-	@docker-compose --env-file $(ENV_FILE) up --build -d
-	@echo "Application should be running in PROD mode. Frontend at http://localhost, Backend API via frontend."
+	@$(PROD_COMPOSE) down --remove-orphans || true
+	@echo "Building and running Docker containers for PROD..."
+	@$(PROD_COMPOSE) up --build -d
+	@echo "Running. The host Caddy serves it, see README 'Deploy notes'."
 
 # Seed database in Docker (Dev)
 docker-seed-dev:
@@ -95,7 +96,7 @@ docker-seed-dev:
 # Seed database in Docker (Prod)
 docker-seed-prod:
 	@echo "Running database seed script in PROD Docker container..."
-	@docker-compose --env-file .env_prod exec backend python -m scripts.seed_db
+	@$(PROD_COMPOSE) exec backend python -m scripts.seed_db
 
 # Run database migrations in Docker (Dev)
 docker-migrate-dev:
@@ -105,7 +106,7 @@ docker-migrate-dev:
 # Run database migrations in Docker (Prod)
 docker-migrate-prod:
 	@echo "Running database migrations in PROD Docker container..."
-	@docker-compose --env-file .env_prod exec backend alembic upgrade head
+	@$(PROD_COMPOSE) exec backend alembic upgrade head
 
 # Lint code
 lint: venv/bin/activate frontend/node_modules
