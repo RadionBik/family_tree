@@ -8,7 +8,7 @@ ARG HOST_GID
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends procps curl && \
+RUN apt-get update && apt-get install -y --no-install-recommends curl && \
     rm -rf /var/lib/apt/lists/*
 
 RUN if getent group ${HOST_GID:-1000} >/dev/null; then \

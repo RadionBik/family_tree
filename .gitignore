@@ -1,41 +1,22 @@
-# Logs
-logs
+logs/
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-dev-debug.log
-__pycache__
-
-# Dependency directories
+__pycache__/
+.ruff_cache/
+venv/
 node_modules/
+*.db
+db_data/
 
-# Environment variables
-.env
-
-# Editor directories and files
-.idea
-.vscode
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
+.idea/
+.vscode/
 *.sw?
-
-# OS specific
 .DS_Store
 
-# Task files
-tasks.json
-tasks/
-
-venv
-*.db
-source_data
+# local data exports
 tree.json
 scripts/parsed_family_tree.json
-# GCP service-account key
-pet-you-*.json
 
+# secrets
 .env*
 !.env.example
+pet-you-*.json
