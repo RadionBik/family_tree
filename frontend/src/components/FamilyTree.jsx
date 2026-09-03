@@ -1,75 +1,24 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import FamilyTreeGraph from "./FamilyTreeGraph";
-import GraphLegend from "./GraphLegend";
 import familyTreeService from "../services/familyTreeService";
-import { ageOn, lifeYears } from "../utils/age";
+import { ageOn } from "../utils/age";
+import { toChartData, pickRoot } from "../utils/chartData";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
 import Alert from "@mui/material/Alert";
 import Paper from "@mui/material/Paper";
 import Button from "@mui/material/Button";
+import Link from "@mui/material/Link";
+import Avatar from "@mui/material/Avatar";
 
-// Members -> Cytoscape elements. Every couple (or parent set) gets a small
-// "union" node: partners feed into it, children hang from it. That keeps
-// spouses on one row and gives siblings a single shared drop line.
-const buildElements = (members) => {
-  const ids = new Set(members.map((m) => m.id));
-  const nodes = members.map((m) => ({
-    data: {
-      id: m.id,
-      label: m.name,
-      display: [m.name, lifeYears(m.birth_date, m.death_date)]
-        .filter(Boolean)
-        .join("\n"),
-      gender: m.gender,
-      birth_date: m.birth_date,
-      death_date: m.death_date,
-      deceased: Boolean(m.death_date),
-      location: m.location,
-      notes: m.notes,
-    },
-  }));
-
-  const parentsOf = new Map(); // child id -> Set(parent id)
-  const couples = new Set(); // "a|b", sorted
-  members.forEach((m) =>
-    m.relationships_from.forEach((r) => {
-      if (!ids.has(r.to_member_id)) return;
-      if (r.relation_type === "PARENT") {
-        if (!parentsOf.has(r.to_member_id))
-          parentsOf.set(r.to_member_id, new Set());
-        parentsOf.get(r.to_member_id).add(m.id);
-      } else if (r.relation_type === "SPOUSE") {
-        couples.add([m.id, r.to_member_id].sort().join("|"));
-      }
-    }),
-  );
-
-  const edges = [];
-  const unions = new Set();
-  const union = (parentIds) => {
-    const id = `u|${[...parentIds].sort().join("|")}`;
-    if (!unions.has(id)) {
-      unions.add(id);
-      nodes.push({ data: { id, union: true } });
-      parentIds.forEach((p) =>
-        edges.push({
-          data: { id: `${p}>${id}`, source: p, target: id, kind: "partner" },
-        }),
-      );
-    }
-    return id;
-  };
-  couples.forEach((key) => union(key.split("|")));
-  parentsOf.forEach((parents, child) => {
-    const u = union(parents);
-    edges.push({
-      data: { id: `${u}>${child}`, source: u, target: child, kind: "child" },
-    });
-  });
-  return [...nodes, ...edges];
+const socialHref = {
+  telegram: (v) => `https://t.me/${v.replace(/^@/, "")}`,
+  vk: (v) => (v.startsWith("http") ? v : `https://vk.com/${v}`),
+  instagram: (v) =>
+    v.startsWith("http") ? v : `https://instagram.com/${v.replace(/^@/, "")}`,
+  phone: (v) => `tel:${v.replace(/[^+\d]/g, "")}`,
 };
 
 const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
@@ -78,22 +27,17 @@ const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const elements = useMemo(() => buildElements(members), [members]);
-
-  const handleNodeClick = (nodeData) => {
-    if (!onMemberSelect) return;
-    onMemberSelect(
-      nodeData && nodeData.id !== selectedMemberId ? nodeData.id : null,
-    );
-  };
+  const { data, marriages } = useMemo(() => toChartData(members), [members]);
+  const mainId =
+    selectedMemberId || (members.length ? pickRoot(members).id : null);
 
   useEffect(() => {
     let isMounted = true;
     familyTreeService
       .getFamilyTreeData()
-      .then((data) => {
+      .then((res) => {
         if (!isMounted) return;
-        if (Array.isArray(data)) setMembers(data);
+        if (Array.isArray(res)) setMembers(res);
         else setError(t("familyTree.errorInvalidData"));
       })
       .catch(() => isMounted && setError(t("familyTree.errorLoading")))
@@ -108,49 +52,70 @@ const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
     const m = members.find((x) => x.id === selectedMemberId);
     if (!m) return null;
 
-    const placeholder = t("common.noData", "No data");
     const age = ageOn(m.birth_date, m.death_date);
     const ageString =
       age === null
-        ? placeholder
+        ? null
         : `${t("years", "{{count}} years", { count: age })}${
             m.death_date
               ? ` ${t("ageAtDeathSuffix", "(at time of death)")}`
               : ""
           }`;
     const rows = [
-      [t("name", "Name"), m.name],
-      [t("birthDate", "Born"), m.birth_date || placeholder],
-      [t("deathDate", "Died"), m.death_date || placeholder],
-      [
-        t("genderLabel", "Gender"),
-        m.gender
-          ? t(`gender.${m.gender.toLowerCase()}`, m.gender)
-          : placeholder,
-      ],
-      [t("ageLabel", "Age"), ageString],
-      [t("locationLabel", "Location"), m.location || placeholder],
-      m.notes ? [t("notes", "Notes"), m.notes] : null,
-    ].filter(Boolean);
+      ["middleName", m.middle_name],
+      ["maidenName", m.maiden_name],
+      ["birthDate", m.birth_date],
+      ["birthPlace", m.birth_place],
+      ["deathDate", m.death_date],
+      ["ageLabel", ageString],
+      ["locationLabel", m.location],
+      ["profession", m.profession],
+      ["notes", m.notes],
+    ].filter(([, value]) => value);
+    const contacts = ["phone", "telegram", "vk", "instagram"].filter(
+      (k) => m[k],
+    );
 
     return (
-      <Paper elevation={1} sx={{ marginTop: 3, padding: 2 }}>
-        <Typography variant="h6" gutterBottom>
-          {t("familyTree.detailsTitle", "Details")}
-        </Typography>
-        {rows.map(([label, value]) => (
-          <Typography key={label} variant="body1" gutterBottom>
+      <Paper elevation={1} sx={{ mt: 3, p: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
+          <Avatar src={m.photo_url || undefined} sx={{ width: 56, height: 56 }}>
+            {m.first_name[0]}
+          </Avatar>
+          <Typography variant="h6">{m.name}</Typography>
+        </Box>
+        {rows.map(([key, value]) => (
+          <Typography key={key} variant="body1" gutterBottom>
             <Typography component="span" fontWeight="bold">
-              {label}:
+              {t(key)}:
             </Typography>{" "}
             {value}
           </Typography>
         ))}
+        {contacts.length > 0 && (
+          <Typography variant="body1" gutterBottom>
+            <Typography component="span" fontWeight="bold">
+              {t("contacts", "Contacts")}:
+            </Typography>{" "}
+            {contacts.map((k, i) => (
+              <React.Fragment key={k}>
+                {i > 0 && " · "}
+                <Link
+                  href={socialHref[k](m[k])}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {t(k)}
+                </Link>
+              </React.Fragment>
+            ))}
+          </Typography>
+        )}
         <Button
           variant="outlined"
           size="small"
           onClick={() => onMemberSelect(null)}
-          sx={{ marginTop: 1 }}
+          sx={{ mt: 1 }}
         >
           {t("close")}
         </Button>
@@ -175,28 +140,25 @@ const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
         </Alert>
       )}
 
-      {!loading && !error && elements.length > 0 && (
-        <>
-          <Box
-            sx={{
-              height: "min(75vh, 800px)",
-              minHeight: 400,
-              border: "1px solid",
-              borderColor: "divider",
-              mb: 2,
-              overflow: "hidden",
-            }}
-          >
-            <FamilyTreeGraph
-              elements={elements}
-              onNodeClick={handleNodeClick}
-              selectedNodeId={selectedMemberId}
-            />
-          </Box>
-          <GraphLegend />
-        </>
+      {!loading && !error && data.length > 0 && (
+        <Box
+          sx={{
+            height: "min(75vh, 800px)",
+            minHeight: 400,
+            border: "1px solid",
+            borderColor: "divider",
+            overflow: "hidden",
+          }}
+        >
+          <FamilyTreeGraph
+            data={data}
+            marriages={marriages}
+            mainId={mainId}
+            onMainChange={onMemberSelect}
+          />
+        </Box>
       )}
-      {!loading && !error && elements.length === 0 && (
+      {!loading && !error && data.length === 0 && (
         <Typography sx={{ mt: 2 }}>{t("familyTree.noData")}</Typography>
       )}
 

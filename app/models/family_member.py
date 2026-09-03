@@ -40,6 +40,15 @@ class FamilyMember(Base):
     )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     location: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    middle_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    maiden_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    birth_place: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    profession: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    photo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    telegram: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    vk: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    instagram: Mapped[str | None] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
