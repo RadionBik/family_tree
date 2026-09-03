@@ -11,14 +11,13 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from config import check_production_vars, config
 
-from . import models
 from .api import auth as auth_router
 from .api import birthdays as birthdays_router
 from .api import family as family_router
 from .api import (
     subscriptions as subscriptions_router,
 )
-from .utils.database import async_engine, init_models
+from .utils.database import async_engine
 from .utils.localization import get_text
 
 config_name = os.getenv("APP_ENV", "development")
@@ -31,7 +30,7 @@ if not os.path.exists(log_dir):
 
 log_file = os.path.join(log_dir, "family_tree.log")
 
-file_handler = RotatingFileHandler(log_file, maxBytes=10240, backupCount=10)
+file_handler = RotatingFileHandler(log_file, maxBytes=5 * 1024 * 1024, backupCount=5)
 file_handler.setFormatter(
     logging.Formatter(
         "%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]"
@@ -57,25 +56,14 @@ if app_config.DEBUG:
 
 
 check_production_vars(app_config, logger)
+if not app_config.JWT_SECRET_KEY:
+    raise RuntimeError("JWT_SECRET_KEY is not set")
 
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
-    logger.info("Application startup: Initializing database models...")
-    _ = models
-    await init_models()
-    logger.info("Database models initialized.")
-
     yield
-
-    # Shutdown
-    logger.info("Application shutdown: Disposing database engine...")
-    if async_engine:
-        await async_engine.dispose()
-        logger.info("Database engine disposed.")
-    else:
-        logger.warning("Async engine not available for disposal.")
+    await async_engine.dispose()
 
 
 # Create FastAPI app instance with lifespan manager
@@ -86,17 +74,14 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-origins = [
-    os.getenv("CORS_ORIGIN", "*"),
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# In prod the API is same-origin behind Caddy (/api), so CORS is only for local dev.
+if cors_origin := os.getenv("CORS_ORIGIN"):
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[cors_origin],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 
 @app.exception_handler(StarletteHTTPException)
@@ -139,10 +124,7 @@ logger.info("API routers included.")
 
 @app.get("/", response_class=PlainTextResponse, tags=["Health"])
 async def root():
-    """
-    Root endpoint for basic health check.
-    """
-    logger.info("Accessed root health check endpoint '/'")
+    """Health check (Docker HEALTHCHECK polls this)."""
     return get_text("api_welcome")
 
 

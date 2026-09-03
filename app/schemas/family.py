@@ -96,7 +96,6 @@ class FamilyMemberRead(FamilyMemberBase):
     updated_at: datetime
     relationships_from: list[RelationRead] = []
     relationships_to: list[RelationRead] = []
-    is_descendant: bool | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

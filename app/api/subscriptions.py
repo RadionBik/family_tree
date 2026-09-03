@@ -3,6 +3,8 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.auth import get_current_active_user
+from app.models.admin_user import AdminUser
 from app.schemas.subscription import (
     SubscriptionCreate,
     SubscriptionRead,
@@ -30,6 +32,7 @@ router = APIRouter()
 async def subscribe_email(
     subscription_in: SubscriptionCreate,
     db: AsyncSession = Depends(get_db_session),
+    _: AdminUser = Depends(get_current_active_user),
 ):
     """
     API endpoint to subscribe an email address.

@@ -27,7 +27,10 @@
     "placeholder": "[Визуализация семейного древа будет здесь]",
     "requiresIntegration": "(Требуется интеграция библиотеки)",
     "detailsTitle": "Детали",
-    "edgeLegendTitle": "Типы связей"
+    "edgeLegendTitle": "Типы связей",
+    "errorLoading": "Не удалось загрузить семейное древо.",
+    "errorInvalidData": "Сервер вернул неверные данные.",
+    "noData": "Данных пока нет."
   },
   "adminLogin": {
     "title": "Вход для администратора",
@@ -177,5 +180,16 @@
     "errorInvalid": "Неверное имя пользователя или пароль.",
     "errorNetwork": "Ошибка сети. Проверьте подключение.",
     "errorTokenMissing": "Вход успешен, но токен не получен."
+  },
+  "locationLabel": "Место",
+  "years": "{{count}} лет",
+  "ageAtDeathSuffix": "(на момент смерти)",
+  "legend": {
+    "male": "Мужчина",
+    "female": "Женщина",
+    "deceased": "Умер(ла)",
+    "union": "Пара / родители",
+    "partner": "Супруг(а)",
+    "child": "Ребёнок"
   }
 }

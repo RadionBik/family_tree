@@ -15,6 +15,7 @@ module.exports = [
     languageOptions: {
       sourceType: "module",
       ecmaVersion: "latest",
+      parserOptions: { ecmaFeatures: { jsx: true } },
       globals: {
         ...globals.browser,
       },
@@ -27,6 +28,7 @@ module.exports = [
     rules: {
       ...pluginReact.configs.recommended.rules,
       ...pluginReactHooks.configs.recommended.rules,
+      "react/prop-types": "off",
       "react-refresh/only-export-components": [
         "warn",
         { allowConstantExport: true },

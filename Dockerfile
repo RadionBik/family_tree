@@ -9,10 +9,7 @@ ARG HOST_GID
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends procps curl && \
-    rm -rf /var/lib/apt/lists/* && \
-    mkdir -p /app/logs && \
-    touch /app/logs/cron.log && \
-    touch /app/logs/ingestion.log
+    rm -rf /var/lib/apt/lists/*
 
 RUN if getent group ${HOST_GID:-1000} >/dev/null; then \
         echo "Group with GID ${HOST_GID:-1000} already exists." ; \
@@ -31,7 +28,9 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
 
 COPY . .
 
-RUN mkdir -p /db_data && chown -R appuser:appgroup /app /db_data
+RUN mkdir -p /db_data /app/logs && chown -R appuser:appgroup /app /db_data
+
+USER appuser
 
 EXPOSE 8000
 

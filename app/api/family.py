@@ -11,7 +11,7 @@ from fastapi import (
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.auth import get_current_active_user
+from app.api.auth import get_current_active_user, require_admin
 from app.models.admin_user import AdminUser
 from app.schemas.family import (
     FamilyMemberCreate,
@@ -44,6 +44,7 @@ router = APIRouter()
 )
 async def get_family_tree(
     db: AsyncSession = Depends(get_db_session),
+    _: AdminUser = Depends(get_current_active_user),
 ):
     """
     API endpoint to retrieve the entire family tree data.
@@ -80,7 +81,7 @@ async def list_family_members(
     size: int = Query(10, ge=1, le=100, description="Items per page"),
     search: str | None = Query(None, description="Search term to filter by name"),
     db: AsyncSession = Depends(get_db_session),
-    current_user: AdminUser = Depends(get_current_active_user),
+    current_user: AdminUser = Depends(require_admin),
 ):
     """
     Admin endpoint to get a paginated list of family members, with optional search.
@@ -128,7 +129,7 @@ async def list_family_members(
 async def create_family_member(
     member_data: FamilyMemberCreate,
     db: AsyncSession = Depends(get_db_session),
-    current_user: AdminUser = Depends(get_current_active_user),
+    current_user: AdminUser = Depends(require_admin),
 ):
     """
     Admin endpoint to create a new family member.
@@ -165,7 +166,7 @@ async def create_family_member(
 async def get_family_member(
     member_id: int,
     db: AsyncSession = Depends(get_db_session),
-    current_user: AdminUser = Depends(get_current_active_user),
+    current_user: AdminUser = Depends(require_admin),
 ):
     """
     Admin endpoint to get a specific family member.
@@ -209,7 +210,7 @@ async def update_family_member(
     member_id: int,
     member_data: FamilyMemberUpdate,
     db: AsyncSession = Depends(get_db_session),
-    current_user: AdminUser = Depends(get_current_active_user),
+    current_user: AdminUser = Depends(require_admin),
 ):
     """
     Admin endpoint to update a family member.
@@ -254,7 +255,7 @@ async def update_family_member(
 async def delete_family_member(
     member_id: int,
     db: AsyncSession = Depends(get_db_session),
-    current_user: AdminUser = Depends(get_current_active_user),
+    current_user: AdminUser = Depends(require_admin),
 ):
     """
     Admin endpoint to delete a family member.
@@ -297,7 +298,7 @@ async def delete_family_member(
 async def batch_delete_family_members(
     delete_data: MemberListDelete,
     db: AsyncSession = Depends(get_db_session),
-    current_user: AdminUser = Depends(get_current_active_user),
+    current_user: AdminUser = Depends(require_admin),
 ):
     """
     Admin endpoint to batch delete family members.
@@ -345,7 +346,7 @@ async def batch_delete_family_members(
 async def create_relationship(
     relation_data: RelationCreate,
     db: AsyncSession = Depends(get_db_session),
-    current_user: AdminUser = Depends(get_current_active_user),
+    current_user: AdminUser = Depends(require_admin),
 ):
     """
     Admin endpoint to create a new relationship.
@@ -390,7 +391,7 @@ async def create_relationship(
 async def delete_relationship(
     relation_id: int,
     db: AsyncSession = Depends(get_db_session),
-    current_user: AdminUser = Depends(get_current_active_user),
+    current_user: AdminUser = Depends(require_admin),
 ):
     """
     Admin endpoint to delete a relationship.

@@ -2,145 +2,112 @@ import csv
 import io
 import logging
 
-from sqlalchemy import text
+from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models import FamilyMember, Relation
 from app.models.family_member import GenderEnum
 from app.models.relation import RelationTypeEnum
-from app.schemas.family import FamilyMemberCreate
-from app.services.family_service import create_family_member, create_relationship
 from scripts.google_sheets_utils import get_family_data_from_sheet, parse_sheet_date
 
 logger = logging.getLogger(__name__)
 
 
-def safe_strip(value):
-    """Safely strip a string, handling None values"""
-    return value.strip() if value and isinstance(value, str) else ""
+def _clean(value) -> str | None:
+    value = value.strip() if isinstance(value, str) else ""
+    return value or None
 
 
-async def process_family_data(db: AsyncSession):
+def _gender(value: str | None) -> GenderEnum | None:
+    if not value:
+        return None
+    try:
+        return GenderEnum[value.upper()]
+    except KeyError:
+        logger.warning(f"Unknown gender {value!r}, stored as empty")
+        return None
+
+
+def parse_rows(rows) -> tuple[list[FamilyMember], list[Relation]]:
+    """Sheet rows -> ORM objects.
+
+    Rows without id/first_name are skipped. Parent links come from
+    mother_id/father_id, spouse links from spouse_id (one edge per pair).
     """
-    Fetches family data from Google Sheets, purges existing data,
-    and populates the database with new data.
-    """
-    logger.info("Starting family data processing from Google Sheets")
-
-    csv_data = get_family_data_from_sheet()
-    if not csv_data:
-        logger.error("No data downloaded, exiting")
-        return
-
-    logger.info("Parsing CSV data")
-    reader = csv.DictReader(io.StringIO(csv_data))
-    members_data = []
-    relationships = []
-
-    for row in reader:
-        member = {
-            "id": safe_strip(row.get("id", "")),
-            "first_name": safe_strip(row.get("first_name", "")),
-            "last_name": safe_strip(row.get("last_name", "")) or None,
-            "birth_date": parse_sheet_date(safe_strip(row.get("birth_date", ""))),
-            "death_date": parse_sheet_date(safe_strip(row.get("death_date", ""))),
-            "gender": GenderEnum[safe_strip(row.get("gender", "")).upper()]
-            if row.get("gender")
-            else None,
-            "location": safe_strip(row.get("location", "")) or None,
-            "notes": safe_strip(row.get("notes", "")) or None,
-        }
-        members_data.append(member)
-
-        relationships.append(
-            {
-                "member_id": member["id"],
-                "mother_id": safe_strip(row.get("mother_id", "")) or None,
-                "father_id": safe_strip(row.get("father_id", "")) or None,
-                "spouse_id": safe_strip(row.get("spouse_id", "")) or None,
-            }
+    members: dict[str, FamilyMember] = {}
+    links: list[tuple[str, str | None, str | None, str | None]] = []
+    for row in rows:
+        member_id = _clean(row.get("id"))
+        first_name = _clean(row.get("first_name"))
+        if not member_id or not first_name:
+            logger.warning(f"Skipping row without id/first_name: {row}")
+            continue
+        if member_id in members:
+            logger.warning(f"Duplicate id {member_id}, keeping the first row")
+            continue
+        members[member_id] = FamilyMember(
+            id=member_id,
+            first_name=first_name,
+            last_name=_clean(row.get("last_name")),
+            birth_date=parse_sheet_date(_clean(row.get("birth_date"))),
+            death_date=parse_sheet_date(_clean(row.get("death_date"))),
+            gender=_gender(_clean(row.get("gender"))),
+            location=_clean(row.get("location")),
+            notes=_clean(row.get("notes")),
+        )
+        links.append(
+            (
+                member_id,
+                _clean(row.get("mother_id")),
+                _clean(row.get("father_id")),
+                _clean(row.get("spouse_id")),
+            )
         )
 
-    try:
-        logger.info("Purging existing family data")
-        await db.execute(text("DELETE FROM relations"))
-        await db.execute(text("DELETE FROM family_members"))
-        await db.flush()
+    relations: list[Relation] = []
+    seen: set[tuple] = set()
 
-        logger.info(f"Processing {len(members_data)} members from Google Sheet...")
-        members_cache = {}
+    def link(src: str, dst: str, kind: RelationTypeEnum) -> None:
+        if src not in members or dst not in members:
+            logger.warning(f"{kind.value} {src} -> {dst}: unknown id, skipped")
+            return
+        if src == dst:
+            return
+        pair = sorted((src, dst)) if kind is RelationTypeEnum.SPOUSE else (src, dst)
+        key = (kind, *pair)
+        if key in seen:
+            return
+        seen.add(key)
+        relations.append(
+            Relation(from_member_id=src, to_member_id=dst, relation_type=kind)
+        )
 
-        for member_data in members_data:
-            member_id = member_data["id"]
-            try:
-                member_create = FamilyMemberCreate(
-                    first_name=member_data["first_name"],
-                    last_name=member_data["last_name"],
-                    birth_date=member_data["birth_date"],
-                    death_date=member_data["death_date"],
-                    gender=member_data["gender"],
-                    location=member_data["location"],
-                    notes=member_data["notes"],
-                )
+    for member_id, mother, father, spouse in links:
+        for parent in (mother, father):
+            if parent:
+                link(parent, member_id, RelationTypeEnum.PARENT)
+        if spouse:
+            link(member_id, spouse, RelationTypeEnum.SPOUSE)
 
-                member = await create_family_member(
-                    db, member_create, member_id=member_id
-                )
-                await db.flush()
-                members_cache[member_id] = member.id
-                logger.info(
-                    f"Created member: {member_data['first_name']} (ID: {member_id})"
-                )
-            except Exception as e:
-                logger.error(
-                    f"Failed to create member {member_data['first_name']}: {str(e)}"
-                )
-                continue
+    return list(members.values()), relations
 
-        logger.info("Creating relationships...")
 
-        for rel_data in relationships:
-            member_id = rel_data["member_id"]
-            if member_id not in members_cache:
-                continue
+async def process_family_data(db: AsyncSession) -> None:
+    """Replace family_members and relations with the sheet contents, one transaction."""
+    csv_data = get_family_data_from_sheet()
+    if not csv_data:
+        logger.error("No data from Google Sheets, database left untouched")
+        return
 
-            for parent_type, parent_id in [
-                ("mother", rel_data["mother_id"]),
-                ("father", rel_data["father_id"]),
-            ]:
-                if parent_id and parent_id in members_cache:
-                    try:
-                        await create_relationship(
-                            db,
-                            from_member_id=members_cache[parent_id],
-                            to_member_id=members_cache[member_id],
-                            relation_type=RelationTypeEnum.PARENT,
-                        )
-                        logger.info(
-                            f"Created parent relationship: {parent_id} -> {member_id}"
-                        )
-                    except Exception as e:
-                        logger.error(
-                            f"Failed to create {parent_type} relationship: {str(e)}"
-                        )
+    members, relations = parse_rows(csv.DictReader(io.StringIO(csv_data)))
+    if not members:
+        logger.error("Sheet parsed to zero members, database left untouched")
+        return
 
-            if rel_data["spouse_id"] and rel_data["spouse_id"] in members_cache:
-                try:
-                    await create_relationship(
-                        db,
-                        from_member_id=members_cache[member_id],
-                        to_member_id=members_cache[rel_data["spouse_id"]],
-                        relation_type=RelationTypeEnum.SPOUSE,
-                    )
-                    logger.info(
-                        f"Created spouse relationship: {member_id} -> {rel_data['spouse_id']}"
-                    )
-                except Exception as e:
-                    logger.error(f"Failed to create spouse relationship: {str(e)}")
-
-        await db.commit()
-        logger.info("Database processing completed successfully")
-
-    except Exception as e:
-        logger.exception(f"Data processing failed: {e}")
-        await db.rollback()
-        raise
+    await db.execute(delete(Relation))
+    await db.execute(delete(FamilyMember))
+    db.add_all(members)
+    await db.flush()
+    db.add_all(relations)
+    await db.commit()
+    logger.info(f"Ingested {len(members)} members, {len(relations)} relations")

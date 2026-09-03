@@ -21,7 +21,6 @@ This is a web application for managing family tree data, featuring a FastAPI bac
 - `migrations/`: Alembic database migration scripts.
 - `scripts/`: Utility scripts (database seeding, birthday notifications).
 - `tests/`: Backend unit and integration tests (currently basic).
-- `data/`: Data files (e.g., `family_tree.json` for seeding, SQLite DB in Docker).
 - `logs/`: Log files (created when running).
 - `config.py`: Backend configuration settings.
 - `requirements.txt`: Python package dependencies for the backend.
@@ -54,7 +53,20 @@ This project uses environment files to manage configuration for different enviro
     cp .env.example .env
     ```
 
-**Note:** After copying the file, be sure to review and update the variables within it to match your setup. A `JWT_SECRET_KEY` is required for all environments. For production, email server settings (`MAIL_*`) are also essential.
+**Note:** After copying the file, review and update the variables to match your setup. `JWT_SECRET_KEY` is required; the backend refuses to start without it. For production, the `MAIL_*` settings are also needed.
+
+## How data flows
+
+The Google Sheet is the source of truth. The `scheduler` container re-reads it every 10 minutes and replaces `family_members` and `relations` in one transaction (see `scripts/data_utils.py`). Edits made anywhere else are overwritten on the next run.
+
+All `/api/*` routes except the health check `/` require a login token. Two accounts are seeded by `scripts/seed_db.py`: `admin` (role `admin`) and the shared viewer account (role `viewer`). Only `admin` can reach the `/api/family/members*` and `/api/family/relationships*` routes.
+
+## Deploy notes
+
+- The backend container runs as UID/GID 1000 (`HOST_UID`/`HOST_GID` build args), so the bind-mounted `db_data/` and `logs/` directories on the host must be writable by that user: `sudo chown -R 1000:1000 db_data logs`.
+- `alembic upgrade head` runs on container start (`docker-entrypoint.sh`); no manual migration step is needed after a deploy.
+- The Google service-account key named in `GOOGLE_SERVICE_ACCOUNT_FILE` is mounted read-only from the project directory, not copied into the image. It must exist on the host next to `docker-compose.yml`.
+- `send_to_prod.sh` copies the project (including `.env_prod` and the key file) to the server with rsync; `make run-docker-prod` there rebuilds and restarts.
 ## Makefile Commands
 
 This project uses a `Makefile` to streamline common development, deployment, and maintenance tasks. Below is a comprehensive list of available commands.

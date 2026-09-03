@@ -14,9 +14,9 @@ services:
       DATABASE_URL: sqlite+aiosqlite:////db_data/app.db
       APP_ENV: ${APP_ENV:-production} # Default to production if not set
     volumes:
-      - ./logs:/app/logs # Mount local directory for logs
-      - ./db_data:/db_data # Mount host directory for SQLite DB file
-      # No code mounting for production
+      - ./logs:/app/logs
+      - ./db_data:/db_data
+      - ./${GOOGLE_SERVICE_ACCOUNT_FILE}:/app/${GOOGLE_SERVICE_ACCOUNT_FILE}:ro
     # No database dependency needed for SQLite
     restart: unless-stopped
     # Healthcheck is defined in the backend Dockerfile
@@ -38,6 +38,7 @@ services:
     volumes:
       - ./logs:/app/logs
       - ./db_data:/db_data
+      - ./${GOOGLE_SERVICE_ACCOUNT_FILE}:/app/${GOOGLE_SERVICE_ACCOUNT_FILE}:ro
     depends_on:
       backend:
         condition: service_healthy
