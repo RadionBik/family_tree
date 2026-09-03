@@ -2,7 +2,7 @@ const globals = require("globals");
 const pluginJs = require("@eslint/js");
 const pluginReact = require("eslint-plugin-react");
 const pluginReactHooks = require("eslint-plugin-react-hooks");
-const pluginReactRefresh = require("eslint-plugin-react-refresh");
+const pluginReactRefresh = require("eslint-plugin-react-refresh").default;
 const prettier = require("eslint-config-prettier");
 
 module.exports = [
