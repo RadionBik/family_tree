@@ -1,45 +1,36 @@
+# One grouped PR per ecosystem per week instead of a PR per package per day.
 version: 2
 updates:
-  # Enable version updates for Python (pip)
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+    groups:
+      python:
+        patterns: ["*"]
     commit-message:
       prefix: "chore(deps)"
-      include: "scope"
 
-  # Enable version updates for JavaScript (npm)
   - package-ecosystem: "npm"
     directory: "/frontend"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+    groups:
+      frontend:
+        patterns: ["*"]
     commit-message:
       prefix: "chore(deps)"
-      include: "scope"
-
-  # Enable version updates for Docker
-  - package-ecosystem: "docker"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    commit-message:
-      prefix: "chore(deps)"
-      include: "scope"
 
   - package-ecosystem: "docker"
-    directory: "/frontend"
+    directories: ["/", "/frontend"]
     schedule:
-      interval: "daily"
+      interval: "weekly"
     commit-message:
       prefix: "chore(deps)"
-      include: "scope"
 
-  # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     commit-message:
       prefix: "chore(deps)"
-      include: "scope"

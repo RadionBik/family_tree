@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: pipx run ruff==0.11.13 check .
+      - run: pipx run ruff==0.11.13 format --check .
+      - run: python -m tests.test_smoke
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npx eslint src
+      - run: npx prettier --check src
+      - run: npm run build
+
+  deploy:
+    needs: [backend, frontend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency: deploy
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_PORT: ${{ secrets.VPS_PORT }}
+      VPS_USER: ${{ secrets.VPS_USER }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the deploy key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p "$VPS_PORT" "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+      - name: Build images
+        run: env UID=1000 GID=1000 docker compose -f docker-compose.yml -f docker-compose.prod.yml build
+      - name: Ship images, sync the tree, restart
+        run: |
+          docker save family_tree-backend family_tree-frontend | gzip | ssh -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" 'gunzip | docker load'
+          rsync -rtlz --delete --filter='merge .rsync-filter' -e "ssh -p $VPS_PORT" ./ "$VPS_USER@$VPS_HOST:~/family_tree/"
+          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" 'cd ~/family_tree && make prod'

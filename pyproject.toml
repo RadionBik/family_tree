@@ -1,4 +1,5 @@
 [tool.ruff]
+extend-exclude = ["migrations/versions"]
 # Same as Black.
 line-length = 88
 # Assume Python 3.12 based on pip output.
