@@ -10,18 +10,8 @@ from app.utils.database import (
 )
 from config import config
 
-log_dir = os.path.join(os.path.dirname(__file__), "..", "logs")
-if not os.path.exists(log_dir):
-    os.makedirs(log_dir)
-log_file = os.path.join(log_dir, "birthday_notifications.log")
-
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]",
-    handlers=[
-        logging.FileHandler(log_file),
-        logging.StreamHandler(),
-    ],
+    level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
 )
 logger = logging.getLogger(__name__)
 

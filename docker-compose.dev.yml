@@ -14,7 +14,6 @@ services:
     volumes:
       - ./:/app
       - ./db_data:/db_data
-      - ./logs:/app/logs
 
   frontend:
     build:

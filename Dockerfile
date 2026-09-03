@@ -28,7 +28,7 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
 
 COPY . .
 
-RUN mkdir -p /db_data /app/logs && chown -R appuser:appgroup /app /db_data
+RUN mkdir -p /db_data && chown -R appuser:appgroup /app /db_data
 
 USER appuser
 

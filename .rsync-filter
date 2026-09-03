@@ -10,4 +10,3 @@
 P /.env*
 P /*.json
 P /db_data/
-P /logs/
