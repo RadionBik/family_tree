@@ -44,7 +44,7 @@ const FamilyTreeGraph = ({ data, marriages, mainId, onMainChange }) => {
     });
 
     if (mainId && chart.store.getDatum(mainId)) chart.updateMainId(mainId);
-    chart.updateTree({ initial: true });
+    chart.updateTree({ initial: true, tree_position: "fit" });
     chartRef.current = chart;
 
     return () => {
