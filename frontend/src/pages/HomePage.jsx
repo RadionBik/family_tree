@@ -8,6 +8,7 @@ import FamilyTree from "../components/FamilyTree";
 import ChangeLog from "../components/ChangeLog";
 import SubscriptionForm from "../components/SubscriptionForm";
 import familyTreeService from "../services/familyTreeService";
+import { pickRoot } from "../utils/chartData";
 
 const HomePage = () => {
   const { t } = useTranslation();
@@ -22,6 +23,9 @@ const HomePage = () => {
       const data = await familyTreeService.getFamilyTreeData();
       if (!Array.isArray(data)) throw new Error("bad payload");
       setMembers(data);
+      setSelectedMemberId(
+        (cur) => cur ?? (data.length ? pickRoot(data).id : null),
+      );
       setError(null);
       setVersion((v) => v + 1);
     } catch {
