@@ -19,6 +19,9 @@ translations = {
     "auth_user_inactive": "Учетная запись пользователя неактивна.",
     "auth_invalid_credentials": "Неверное имя пользователя или пароль.",
     "auth_token_invalid": "Недействительный или просроченный токен.",
+    "auth_forbidden": "Доступ запрещен.",
+    "not_found": "Не найдено.",
+    "conflict": "Такая запись уже есть.",
     # Relationship Errors
 }
 

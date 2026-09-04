@@ -12,10 +12,12 @@ from config import check_production_vars, config
 
 from .api import auth as auth_router
 from .api import birthdays as birthdays_router
+from .api import changes as changes_router
 from .api import family as family_router
 from .api import (
     subscriptions as subscriptions_router,
 )
+from .services.edit_service import ConflictError, NotFoundError
 from .utils.database import async_engine
 from .utils.localization import get_text
 
@@ -81,6 +83,16 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 
+@app.exception_handler(NotFoundError)
+async def not_found_handler(request: Request, exc: NotFoundError):
+    return JSONResponse(status_code=404, content={"detail": get_text("not_found")})
+
+
+@app.exception_handler(ConflictError)
+async def conflict_handler(request: Request, exc: ConflictError):
+    return JSONResponse(status_code=409, content={"detail": get_text("conflict")})
+
+
 @app.exception_handler(Exception)
 async def generic_exception_handler(request: Request, exc: Exception):
     """Handles any other unexpected exceptions."""
@@ -93,6 +105,7 @@ async def generic_exception_handler(request: Request, exc: Exception):
 
 app.include_router(family_router.router, prefix="/api", tags=["Family"])
 app.include_router(birthdays_router.router, prefix="/api", tags=["Birthdays"])
+app.include_router(changes_router.router, prefix="/api", tags=["Changes"])
 app.include_router(subscriptions_router.router, prefix="/api", tags=["Subscriptions"])
 app.include_router(auth_router.router, prefix="/api", tags=["Authentication"])
 logger.info("API routers included.")

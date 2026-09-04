@@ -36,7 +36,7 @@ prod:  ## (re)start the prod stack from the images CI shipped (.env_prod)
 prod-build:  ## build the prod images locally; CI does this on every deploy
 	$(PROD) build
 
-seed:  ## seed admin/viewer users and run the first ingest (COMPOSE=$(DEV) for dev)
+seed:  ## create the admin and viewer login accounts (COMPOSE=$(DEV) for dev)
 	$(COMPOSE) exec backend python -m scripts.seed_db
 
 clean:  ## remove venv, node_modules, build output, caches

@@ -90,7 +90,6 @@ def test_api_access_rules():
     assert tree.status_code == 200
     assert {m["id"] for m in tree.json()} == {"m1", "m2"}
     assert client.get("/api/upcoming-birthdays", headers=viewer).status_code == 200
-    assert client.get("/api/family/members/list", headers=viewer).status_code == 404
 
     admin = _login(client, "admin")
     assert client.get("/api/auth/me", headers=admin).json()["role"] == "admin"

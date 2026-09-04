@@ -4,18 +4,22 @@ Personal family website. Backend FastAPI + SQLAlchemy (async) + SQLite, frontend
 
 ## Source of truth
 
-The Google Sheet is the only editable data source. `scripts/data_utils.py` (`parse_rows`, `process_family_data`) wipes and reloads `family_members` and `relations` in one transaction every 10 minutes from `run_scheduler.py`. Never add write endpoints for member data: anything written to the DB is overwritten on the next run. The admin CRUD was removed for this reason.
+The SQLite database (`db_data/app.db`) is the source of truth. All writes go through `app/services/edit_service.py`, which records every change in the `changes` table (entity, kind, field, old, new, author). Write routes need the `admin` role (`require_admin`); the shared viewer account only reads. Never write to the tables from anywhere else.
 
-Sheet columns: required `id`, `first_name`; optional `last_name`, `birth_date`, `death_date`, `gender` (male/female/other), `location`, `notes`, `mother_id`, `father_id`, `spouse_id`, `marriage_date`, `divorce_date`, and the text columns listed in `TEXT_COLUMNS` in `scripts/data_utils.py`. Dates in any format `parse_sheet_date` accepts. The `id` column is a formula, `CONCATENATE(last_name, first_name, number)`: renaming a person changes their id and silently breaks every `mother_id`/`father_id`/`spouse_id` that points at them (the ingest logs `unknown id, skipped`). After a rename, update the references too. Placeholder rows for unnamed parents use literal ids `unknown_*`. New person fields = new sheet column + model column + alembic migration + `TEXT_COLUMNS` + `FamilyMemberRead` + details panel in `FamilyTree.jsx`.
+The Google Sheet is history. `python -m scripts.data_utils` is a one-off importer that replaces people and relations with the sheet contents; it refuses to run once `changes` has rows unless `--force` is given (that would drop every in-place edit). Sheet columns it reads: `id`, `first_name`, `last_name`, `birth_date`, `death_date`, `gender` (male/female/other), `location`, `notes`, `mother_id`, `father_id`, `spouse_id`, `marriage_date`, `divorce_date`, plus `TEXT_COLUMNS`. Its `id` column is a formula `CONCATENATE(last_name, first_name, number)`.
+
+New person fields = model column + alembic migration + `MemberFields` in `app/schemas/family.py` + details panel in `FamilyTree.jsx` (+ `TEXT_COLUMNS` if the importer should read it).
+
+Backups: `scripts/backup_db.py` runs daily from the scheduler (`VACUUM INTO db_data/backups/app-YYYY-MM-DD.db`, 30 kept). Restore = stop the stack, copy a backup over `db_data/app.db`, start.
 
 ## Layout
 
 - `app/api/*`: routes. Everything under `/api` needs a bearer token (`get_current_active_user`); `/` is the health check.
-- `app/services/*`: queries. `birthday_service` does date math in Python (family-sized data, fine).
+- `app/services/*`: `edit_service` is the write path with the change log; `family_service` reads; `birthday_service` does date math in Python (family-sized data, fine).
 - `app/models/*`, `migrations/versions/*`: schema. Alembic owns the schema; `alembic upgrade head` runs in `docker-entrypoint.sh`.
-- `scripts/`: ingest, seed (`seed_db.py` creates `admin` and the shared viewer account from env), birthday emails.
+- `scripts/`: `seed_db.py` (login accounts from env), `backup_db.py`, `send_birthday_notifications.py`, `data_utils.py` (one-off sheet import).
 - `frontend/src/components/FamilyTreeGraph.jsx`: family-chart wrapper. `utils/chartData.js`: API members -> chart data (parents/spouses/children arrays, marriage years).
-- `tests/test_smoke.py`: the only test. Run `make test` or `python -m tests.test_smoke`. Extend it rather than adding a framework.
+- `tests/test_smoke.py`: the only test (access rules, write path + change log, backup, sheet parsing). Run `make test` or `python -m tests.test_smoke`. Extend it rather than adding a framework.
 
 ## Commands
 
