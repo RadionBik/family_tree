@@ -143,8 +143,8 @@ const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
       {!loading && !error && data.length > 0 && (
         <Box
           sx={{
-            height: "min(75vh, 800px)",
-            minHeight: 400,
+            height: "75vh",
+            minHeight: 500,
             border: "1px solid",
             borderColor: "divider",
             overflow: "hidden",
