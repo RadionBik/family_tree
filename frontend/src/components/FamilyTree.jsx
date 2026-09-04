@@ -26,7 +26,7 @@ const FamilyTree = ({
   onChanged,
 }) => {
   const { t } = useTranslation();
-  const isAdmin = authService.isAdmin();
+  const isAdmin = authService.canEdit();
   const [dialog, setDialog] = useState(null); // "add" | "edit" | "relation"
   const [actionError, setActionError] = useState(null);
 
@@ -157,6 +157,12 @@ const FamilyTree = ({
                 })
               }
               onAddPerson={() => setDialog("add")}
+              onPhoto={(file) =>
+                run(async () => {
+                  await familyTreeService.uploadPhoto(selected.id, file);
+                  await afterWrite(selected.id);
+                })
+              }
             />
           </Box>
         </Box>
