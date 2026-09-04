@@ -10,7 +10,7 @@ The Google Sheet is history. `python -m scripts.data_utils` is a one-off importe
 
 New person fields = model column + alembic migration + `MemberFields` in `app/schemas/family.py` + details panel in `FamilyTree.jsx` (+ `TEXT_COLUMNS` if the importer should read it).
 
-Backups: `scripts/backup_db.py` runs daily from the scheduler (`VACUUM INTO db_data/backups/app-YYYY-MM-DD.db`, 30 kept). Restore = stop the stack, copy a backup over `db_data/app.db`, start.
+The scheduler keeps last-run dates in `db_data/scheduler_state.json`; delete the key to force a re-run. Backups: `scripts/backup_db.py` runs daily from the scheduler (`VACUUM INTO db_data/backups/app-YYYY-MM-DD.db`, 30 kept). Restore = stop the stack, copy a backup over `db_data/app.db`, start.
 
 ## Layout
 
