@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import Container from "@mui/material/Container";
+import Box from "@mui/material/Box";
 import Layout from "../components/Layout";
 import BirthdayTimeline from "../components/BirthdayTimeline";
 import FamilyTree from "../components/FamilyTree";
@@ -9,14 +11,18 @@ const HomePage = () => {
 
   return (
     <Layout>
-      <div className="home-page-grid">
+      <Container maxWidth="lg">
         <BirthdayTimeline onMemberSelect={setSelectedMemberId} />
+      </Container>
+      <Box sx={{ px: 2 }}>
         <FamilyTree
           selectedMemberId={selectedMemberId}
           onMemberSelect={setSelectedMemberId}
         />
+      </Box>
+      <Container maxWidth="lg">
         <SubscriptionForm />
-      </div>
+      </Container>
     </Layout>
   );
 };
