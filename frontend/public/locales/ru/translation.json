@@ -71,5 +71,47 @@
   "phone": "Телефон",
   "telegram": "Telegram",
   "vk": "ВКонтакте",
-  "instagram": "Instagram"
+  "instagram": "Instagram",
+  "first_name": "Имя",
+  "last_name": "Фамилия",
+  "middle_name": "Отчество",
+  "maiden_name": "Девичья фамилия",
+  "birth_date": "Дата рождения",
+  "death_date": "Дата смерти",
+  "birth_place": "Место рождения",
+  "photo_url": "Ссылка на фото",
+  "edit": {
+    "addPerson": "Добавить человека",
+    "addTitle": "Новый человек",
+    "editTitle": "Редактировать",
+    "edit": "Редактировать",
+    "delete": "Удалить",
+    "save": "Сохранить",
+    "confirmDelete": "Удалить {{name}} и все связи этого человека?",
+    "addRelation": "Добавить связь",
+    "removeRelation": "Убрать связь",
+    "relationKind": "Кем приходится второй человек",
+    "marriageDate": "Дата брака",
+    "errorSave": "Не удалось сохранить."
+  },
+  "relation": {
+    "title": "Связи",
+    "none": "Связей пока нет.",
+    "parent": "родитель",
+    "child": "ребёнок",
+    "spouse": "супруг(а)",
+    "parentOf": "родитель",
+    "childOf": "ребёнок"
+  },
+  "log": {
+    "title": "Изменения",
+    "empty": "Изменений пока нет.",
+    "count": "{{count}} изм.",
+    "added": "Добавлен(а)",
+    "removed": "Удалён(а)",
+    "relationRemoved": "Удалена связь",
+    "parentOf": "— родитель для",
+    "spouses": "— супруги",
+    "and": "и"
+  }
 }

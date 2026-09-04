@@ -1,7 +1,10 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import FamilyTreeGraph from "./FamilyTreeGraph";
+import MemberDialog from "./MemberDialog";
+import RelationDialog from "./RelationDialog";
 import familyTreeService from "../services/familyTreeService";
+import authService from "../services/authService";
 import { ageOn } from "../utils/age";
 import { toChartData, pickRoot } from "../utils/chartData";
 import Box from "@mui/material/Box";
@@ -10,8 +13,10 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Alert from "@mui/material/Alert";
 import Paper from "@mui/material/Paper";
 import Button from "@mui/material/Button";
+import IconButton from "@mui/material/IconButton";
 import Link from "@mui/material/Link";
 import Avatar from "@mui/material/Avatar";
+import Stack from "@mui/material/Stack";
 
 const socialHref = {
   telegram: (v) => `https://t.me/${v.replace(/^@/, "")}`,
@@ -21,52 +26,84 @@ const socialHref = {
   phone: (v) => `tel:${v.replace(/[^+\d]/g, "")}`,
 };
 
-const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
+// Relations of one person as rows: [kind, relation, other member].
+const relationRows = (m, byId) => {
+  const rows = [];
+  m.relationships_to.forEach((r) => {
+    if (r.relation_type === "PARENT")
+      rows.push(["parent", r, byId.get(r.from_member_id)]);
+    if (r.relation_type === "SPOUSE")
+      rows.push(["spouse", r, byId.get(r.from_member_id)]);
+  });
+  m.relationships_from.forEach((r) => {
+    if (r.relation_type === "PARENT")
+      rows.push(["child", r, byId.get(r.to_member_id)]);
+    if (r.relation_type === "SPOUSE")
+      rows.push(["spouse", r, byId.get(r.to_member_id)]);
+  });
+  return rows.filter(([, , other]) => other);
+};
+
+const FamilyTree = ({
+  members,
+  loading,
+  error,
+  selectedMemberId,
+  onMemberSelect,
+  onChanged,
+}) => {
   const { t } = useTranslation();
-  const [members, setMembers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const isAdmin = authService.isAdmin();
+  const [dialog, setDialog] = useState(null); // "add" | "edit" | "relation"
+  const [actionError, setActionError] = useState(null);
 
   const { data, marriages } = useMemo(() => toChartData(members), [members]);
+  const byId = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
   const mainId =
     selectedMemberId || (members.length ? pickRoot(members).id : null);
+  const selected = selectedMemberId ? byId.get(selectedMemberId) : null;
 
-  useEffect(() => {
-    let isMounted = true;
-    familyTreeService
-      .getFamilyTreeData()
-      .then((res) => {
-        if (!isMounted) return;
-        if (Array.isArray(res)) setMembers(res);
-        else setError(t("familyTree.errorInvalidData"));
-      })
-      .catch(() => isMounted && setError(t("familyTree.errorLoading")))
-      .finally(() => isMounted && setLoading(false));
-    return () => {
-      isMounted = false;
-    };
-  }, [t]);
+  const afterWrite = async (focusId) => {
+    setDialog(null);
+    setActionError(null);
+    await onChanged();
+    if (focusId !== undefined) onMemberSelect(focusId);
+  };
 
-  const renderMemberDetails = () => {
-    if (!selectedMemberId) return null;
-    const m = members.find((x) => x.id === selectedMemberId);
-    if (!m) return null;
+  const removeRelation = async (id) => {
+    try {
+      await familyTreeService.removeRelation(id);
+      await afterWrite();
+    } catch (err) {
+      setActionError(err.response?.data?.detail || t("edit.errorSave"));
+    }
+  };
 
+  const deleteMember = async () => {
+    if (!window.confirm(t("edit.confirmDelete", { name: selected.name })))
+      return;
+    try {
+      await familyTreeService.deleteMember(selected.id);
+      await afterWrite(null);
+    } catch (err) {
+      setActionError(err.response?.data?.detail || t("edit.errorSave"));
+    }
+  };
+
+  const renderDetails = () => {
+    if (!selected) return null;
+    const m = selected;
     const age = ageOn(m.birth_date, m.death_date);
     const ageString =
       age === null
         ? null
-        : `${t("years", "{{count}} years", { count: age })}${
-            m.death_date
-              ? ` ${t("ageAtDeathSuffix", "(at time of death)")}`
-              : ""
-          }`;
+        : `${t("years", { count: age })}${m.death_date ? ` ${t("ageAtDeathSuffix")}` : ""}`;
     const rows = [
-      ["middleName", m.middle_name],
-      ["maidenName", m.maiden_name],
-      ["birthDate", m.birth_date],
-      ["birthPlace", m.birth_place],
-      ["deathDate", m.death_date],
+      ["middle_name", m.middle_name],
+      ["maiden_name", m.maiden_name],
+      ["birth_date", m.birth_date],
+      ["birth_place", m.birth_place],
+      ["death_date", m.death_date],
       ["ageLabel", ageString],
       ["locationLabel", m.location],
       ["profession", m.profession],
@@ -75,6 +112,7 @@ const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
     const contacts = ["phone", "telegram", "vk", "instagram"].filter(
       (k) => m[k],
     );
+    const relations = relationRows(m, byId);
 
     return (
       <Paper elevation={1} sx={{ mt: 3, p: 2 }}>
@@ -82,7 +120,19 @@ const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
           <Avatar src={m.photo_url || undefined} sx={{ width: 56, height: 56 }}>
             {m.first_name[0]}
           </Avatar>
-          <Typography variant="h6">{m.name}</Typography>
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            {m.name}
+          </Typography>
+          {isAdmin && (
+            <Stack direction="row" spacing={1}>
+              <Button size="small" onClick={() => setDialog("edit")}>
+                {t("edit.edit")}
+              </Button>
+              <Button size="small" color="error" onClick={deleteMember}>
+                {t("edit.delete")}
+              </Button>
+            </Stack>
+          )}
         </Box>
         {rows.map(([key, value]) => (
           <Typography key={key} variant="body1" gutterBottom>
@@ -95,7 +145,7 @@ const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
         {contacts.length > 0 && (
           <Typography variant="body1" gutterBottom>
             <Typography component="span" fontWeight="bold">
-              {t("contacts", "Contacts")}:
+              {t("contacts")}:
             </Typography>{" "}
             {contacts.map((k, i) => (
               <React.Fragment key={k}>
@@ -111,23 +161,91 @@ const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
             ))}
           </Typography>
         )}
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={() => onMemberSelect(null)}
-          sx={{ mt: 1 }}
-        >
-          {t("close")}
-        </Button>
+
+        <Typography variant="subtitle1" sx={{ mt: 2 }}>
+          {t("relation.title")}
+        </Typography>
+        {relations.length === 0 && (
+          <Typography color="text.secondary">{t("relation.none")}</Typography>
+        )}
+        {relations.map(([kind, r, other]) => (
+          <Box
+            key={r.id}
+            sx={{ display: "flex", alignItems: "center", gap: 1 }}
+          >
+            <Typography
+              variant="body2"
+              sx={{ minWidth: 90 }}
+              color="text.secondary"
+            >
+              {t(`relation.${kind}`)}
+            </Typography>
+            <Link
+              component="button"
+              variant="body2"
+              onClick={() => onMemberSelect(other.id)}
+            >
+              {other.name}
+            </Link>
+            {kind === "spouse" && r.start_date && (
+              <Typography variant="body2" color="text.secondary">
+                ({r.start_date.slice(0, 4)})
+              </Typography>
+            )}
+            {isAdmin && (
+              <IconButton
+                size="small"
+                aria-label={t("edit.removeRelation")}
+                onClick={() => removeRelation(r.id)}
+              >
+                ×
+              </IconButton>
+            )}
+          </Box>
+        ))}
+        {actionError && (
+          <Alert severity="error" sx={{ mt: 1 }}>
+            {actionError}
+          </Alert>
+        )}
+        <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+          {isAdmin && (
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => setDialog("relation")}
+            >
+              {t("edit.addRelation")}
+            </Button>
+          )}
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => onMemberSelect(null)}
+          >
+            {t("close")}
+          </Button>
+        </Stack>
       </Paper>
     );
   };
 
   return (
     <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
-      <Typography variant="h6" component="h2" gutterBottom>
-        {t("familyTree.title")}
-      </Typography>
+      <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+        <Typography variant="h6" component="h2" sx={{ flexGrow: 1 }}>
+          {t("familyTree.title")}
+        </Typography>
+        {isAdmin && (
+          <Button
+            size="small"
+            variant="contained"
+            onClick={() => setDialog("add")}
+          >
+            {t("edit.addPerson")}
+          </Button>
+        )}
+      </Box>
 
       {loading && (
         <Box sx={{ display: "flex", justifyContent: "center", my: 2 }}>
@@ -162,7 +280,25 @@ const FamilyTree = ({ selectedMemberId, onMemberSelect }) => {
         <Typography sx={{ mt: 2 }}>{t("familyTree.noData")}</Typography>
       )}
 
-      {renderMemberDetails()}
+      {renderDetails()}
+
+      {(dialog === "add" || dialog === "edit") && (
+        <MemberDialog
+          open
+          member={dialog === "edit" ? selected : null}
+          onClose={() => setDialog(null)}
+          onSaved={(saved) => afterWrite(saved.id)}
+        />
+      )}
+      {selected && dialog === "relation" && (
+        <RelationDialog
+          open
+          member={selected}
+          members={members}
+          onClose={() => setDialog(null)}
+          onSaved={() => afterWrite()}
+        />
+      )}
     </Paper>
   );
 };
