@@ -33,10 +33,8 @@ const FamilyTreeGraph = ({ data, marriages, mainId, onMainChange }) => {
 
     const card = chart
       .setCardHtml()
-      .setStyle("imageCircle")
       .setCardImageField("photo_url")
-      .setCardDim({ w: 210, h: 66, img_w: 50, img_h: 50, img_x: 8, img_y: 8 })
-      .setCardDisplay([(d) => d.name, (d) => d.years])
+      .setCardDisplay([(d) => d.data.name, (d) => d.data.years])
       .setOnHoverPathToMain();
     card.setOnCardClick((e, d) => {
       card.onCardClickDefault(e, d);
@@ -67,7 +65,12 @@ const FamilyTreeGraph = ({ data, marriages, mainId, onMainChange }) => {
     <div
       ref={containerRef}
       className="f3"
-      style={{ width: "100%", height: "100%", position: "relative" }}
+      style={{
+        width: "100%",
+        height: "100%",
+        position: "relative",
+        background: "rgb(33, 33, 33)",
+      }}
     />
   );
 };
