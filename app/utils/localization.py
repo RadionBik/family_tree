@@ -22,6 +22,10 @@ translations = {
     "auth_forbidden": "Доступ запрещен.",
     "not_found": "Не найдено.",
     "conflict": "Такая запись уже есть.",
+    "invite_invalid": "Ссылка-приглашение недействительна или уже использована.",
+    "username_taken": "Такое имя пользователя уже занято.",
+    "photo_too_large": "Файл больше 15 МБ.",
+    "photo_not_image": "Файл не похож на изображение.",
     # Relationship Errors
 }
 

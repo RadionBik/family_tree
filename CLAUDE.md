@@ -4,13 +4,13 @@ Personal family website. Backend FastAPI + SQLAlchemy (async) + SQLite, frontend
 
 ## Source of truth
 
-The SQLite database (`db_data/app.db`) is the source of truth. All writes go through `app/services/edit_service.py`, which records every change in the `changes` table (entity, kind, field, old, new, author). Write routes need the `admin` role (`require_admin`); the shared viewer account only reads. Never write to the tables from anywhere else.
+The SQLite database (`db_data/app.db`) is the source of truth. All writes go through `app/services/edit_service.py`, which records every change in the `changes` table (entity, kind, field, old, new, author). Write routes need the `admin` or `editor` role (`require_editor`); the shared viewer account (`privet`) only reads; user management (invites) is `admin` only. Editors come from one-time invite links (`POST /api/invites`, 7 days, `invites` table); accepting one creates the login and returns a token. Never write to the tables from anywhere else.
 
 The Google Sheet is history. `python -m scripts.data_utils` is a one-off importer that replaces people and relations with the sheet contents; it refuses to run once `changes` has rows unless `--force` is given (that would drop every in-place edit). Sheet columns it reads: `id`, `first_name`, `last_name`, `birth_date`, `death_date`, `gender` (male/female/other), `location`, `notes`, `mother_id`, `father_id`, `spouse_id`, `marriage_date`, `divorce_date`, plus `TEXT_COLUMNS`. Its `id` column is a formula `CONCATENATE(last_name, first_name, number)`.
 
 New person fields = model column + alembic migration + `MemberFields` in `app/schemas/family.py` + details panel in `FamilyTree.jsx` (+ `TEXT_COLUMNS` if the importer should read it).
 
-The scheduler keeps last-run dates in `db_data/scheduler_state.json`; delete the key to force a re-run. Backups: `scripts/backup_db.py` runs daily from the scheduler (`VACUUM INTO db_data/backups/app-YYYY-MM-DD.db`, 30 kept). Restore = stop the stack, copy a backup over `db_data/app.db`, start.
+The scheduler keeps last-run dates in `db_data/scheduler_state.json`; delete the key to force a re-run. Photos: `POST /api/family/members/{id}/photo` resizes to 1600px JPEG into `db_data/photos/<id>.jpg` and sets `photo_url` to `/api/photos/<id>.jpg?v=<mtime>`. `GET /api/photos/*` accepts the bearer token or the `token` cookie that login sets with path `/api/photos`, so `<img>` tags work. Backups: `scripts/backup_db.py` runs daily from the scheduler (`VACUUM INTO db_data/backups/app-YYYY-MM-DD.db`, 30 kept). Restore = stop the stack, copy a backup over `db_data/app.db`, start.
 
 ## Layout
 

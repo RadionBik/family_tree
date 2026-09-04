@@ -26,7 +26,7 @@ class UserInfo(BaseModel):
     """Schema for returning basic user info after login or for /me endpoint."""
 
     username: str
-    email: EmailStr
+    email: EmailStr | None = None
     role: str
     is_active: bool
 

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.auth import get_current_active_user, require_admin
+from app.api.auth import get_current_active_user, require_editor
 from app.models.admin_user import AdminUser
 from app.schemas.family import (
     FamilyMemberRead,
@@ -36,7 +36,7 @@ async def get_family_tree(
 async def create_member(
     data: MemberCreate,
     db: AsyncSession = Depends(get_db_session),
-    user: AdminUser = Depends(require_admin),
+    user: AdminUser = Depends(require_editor),
 ):
     return await edit_service.create_member(db, data, author=user.username)
 
@@ -46,7 +46,7 @@ async def update_member(
     member_id: str,
     patch: MemberUpdate,
     db: AsyncSession = Depends(get_db_session),
-    user: AdminUser = Depends(require_admin),
+    user: AdminUser = Depends(require_editor),
 ):
     return await edit_service.update_member(db, member_id, patch, author=user.username)
 
@@ -55,7 +55,7 @@ async def update_member(
 async def delete_member(
     member_id: str,
     db: AsyncSession = Depends(get_db_session),
-    user: AdminUser = Depends(require_admin),
+    user: AdminUser = Depends(require_editor),
 ):
     await edit_service.delete_member(db, member_id, author=user.username)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -69,7 +69,7 @@ async def delete_member(
 async def add_relation(
     data: RelationCreate,
     db: AsyncSession = Depends(get_db_session),
-    user: AdminUser = Depends(require_admin),
+    user: AdminUser = Depends(require_editor),
 ):
     return await edit_service.add_relation(db, data, author=user.username)
 
@@ -80,7 +80,7 @@ async def add_relation(
 async def remove_relation(
     relation_id: int,
     db: AsyncSession = Depends(get_db_session),
-    user: AdminUser = Depends(require_admin),
+    user: AdminUser = Depends(require_editor),
 ):
     await edit_service.remove_relation(db, relation_id, author=user.username)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

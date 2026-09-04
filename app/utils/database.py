@@ -1,6 +1,7 @@
 import logging
 import os
 from collections.abc import AsyncGenerator
+from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import declarative_base
@@ -14,6 +15,10 @@ app_config = config[os.getenv("APP_ENV", "development")]
 DATABASE_URL = app_config.SQLALCHEMY_DATABASE_URI
 if DATABASE_URL.startswith("sqlite:///"):
     DATABASE_URL = DATABASE_URL.replace("sqlite:///", "sqlite+aiosqlite:///", 1)
+
+# SQLite file; photos and backups live next to it.
+DB_PATH = Path(DATABASE_URL.split("///", 1)[1])
+PHOTOS_DIR = DB_PATH.parent / "photos"
 
 async_engine = create_async_engine(
     DATABASE_URL,

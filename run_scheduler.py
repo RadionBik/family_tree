@@ -8,12 +8,11 @@ import asyncio
 import json
 import logging
 from datetime import datetime, time
-from pathlib import Path
 
 from dotenv import load_dotenv
 
 from app.scheduler import backup_job, send_birthday_notifications_job
-from app.utils.database import DATABASE_URL
+from app.utils.database import DB_PATH
 
 load_dotenv()
 logging.basicConfig(
@@ -21,7 +20,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-STATE_FILE = Path(DATABASE_URL.split("///", 1)[1]).parent / "scheduler_state.json"
+STATE_FILE = DB_PATH.parent / "scheduler_state.json"
 
 
 def load_state() -> dict:
