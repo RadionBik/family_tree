@@ -22,5 +22,14 @@ const getRole = () => {
   }
 };
 const isAdmin = () => getRole() === "admin";
+const canEdit = () => ["admin", "editor"].includes(getRole());
 
-export default { login, logout, getToken, isLoggedIn, getRole, isAdmin };
+export default {
+  login,
+  logout,
+  getToken,
+  isLoggedIn,
+  getRole,
+  isAdmin,
+  canEdit,
+};

@@ -8,7 +8,8 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api": {
-        target: "http://backend:8000",
+        // API_PROXY=http://127.0.0.1:8000 when the backend runs outside docker
+        target: process.env.API_PROXY || "http://backend:8000",
         changeOrigin: true,
         secure: false,
       },

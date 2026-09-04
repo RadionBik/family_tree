@@ -8,6 +8,7 @@ import Link from "@mui/material/Link";
 import Avatar from "@mui/material/Avatar";
 import Stack from "@mui/material/Stack";
 import Alert from "@mui/material/Alert";
+import Tooltip from "@mui/material/Tooltip";
 import { ageOn, lifeYears } from "../utils/age";
 
 const socialHref = {
@@ -51,6 +52,7 @@ const MemberPanel = ({
   onAddRelation,
   onRemoveRelation,
   onAddPerson,
+  onPhoto,
 }) => {
   const { t } = useTranslation();
 
@@ -92,9 +94,30 @@ const MemberPanel = ({
   return (
     <Stack spacing={2} sx={{ p: 1 }}>
       <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-        <Avatar src={m.photo_url || undefined} sx={{ width: 56, height: 56 }}>
-          {m.first_name[0]}
-        </Avatar>
+        {isAdmin ? (
+          <Tooltip title={t("edit.uploadPhoto")}>
+            <Box component="label" sx={{ cursor: "pointer" }}>
+              <Avatar
+                src={m.photo_url || undefined}
+                sx={{ width: 64, height: 64 }}
+              >
+                {m.first_name[0]}
+              </Avatar>
+              <input
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={(e) =>
+                  e.target.files[0] && onPhoto(e.target.files[0])
+                }
+              />
+            </Box>
+          </Tooltip>
+        ) : (
+          <Avatar src={m.photo_url || undefined} sx={{ width: 64, height: 64 }}>
+            {m.first_name[0]}
+          </Avatar>
+        )}
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
           <Typography variant="h6" sx={{ lineHeight: 1.2 }}>
             {m.name}
