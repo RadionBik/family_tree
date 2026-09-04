@@ -32,7 +32,7 @@ AsyncSessionFactory = async_sessionmaker(
 Base = declarative_base()
 
 
-async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
+async def get_db_session() -> AsyncGenerator[AsyncSession]:
     """FastAPI dependency: one session per request, rolled back on error."""
     async with AsyncSessionFactory() as session:
         try:
