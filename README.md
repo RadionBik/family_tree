@@ -4,7 +4,7 @@ Private family website: an interactive family tree and a list of upcoming birthd
 
 ## How it works
 
-- The SQLite database is the source of truth. People and relations are edited through the API (admin login); every edit is recorded in a change log that the site shows.
+- The SQLite database is the source of truth. Relatives get one-time invite links from the admin, log in and edit people, relations and photos directly; every edit is recorded in a change log that the site shows.
 - FastAPI serves the data; a React SPA (family-chart) draws the tree. The whole site is behind a shared login.
 - A scheduler container sends birthday emails at 08:00 UTC and writes a daily database backup to `db_data/backups/`.
 - The Google Sheet that held the data before is only a one-off import now (`python -m scripts.data_utils`).

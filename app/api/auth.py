@@ -2,7 +2,7 @@ import logging
 import os
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from sqlalchemy import select
@@ -29,7 +29,9 @@ JWT_SECRET_KEY = app_config.JWT_SECRET_KEY
 JWT_ALGORITHM = app_config.JWT_ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = app_config.ACCESS_TOKEN_EXPIRE_MINUTES
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
+COOKIE_NAME = "token"
+EDIT_ROLES = ("admin", "editor")
 
 
 async def get_user(db: AsyncSession, username: str) -> AdminUser | None:
@@ -40,17 +42,19 @@ async def get_user(db: AsyncSession, username: str) -> AdminUser | None:
 
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db_session)
+    request: Request,
+    token: str | None = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_db_session),
 ) -> AdminUser:
-    """
-    Dependency function to get the current user from the JWT token.
-    Decodes the token, validates it, and fetches the user from the database.
-    """
+    """User from the bearer token, or from the cookie that <img> requests carry."""
+    token = token or request.cookies.get(COOKIE_NAME)
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail=get_text("auth_token_invalid"),
         headers={"WWW-Authenticate": "Bearer"},
     )
+    if not token:
+        raise credentials_exception
     try:
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
         username: str = payload.get("sub")
@@ -88,15 +92,39 @@ async def get_current_active_user(
     return current_user
 
 
+async def require_editor(
+    current_user: AdminUser = Depends(get_current_active_user),
+) -> AdminUser:
+    """Write routes: admins and invited editors. The shared viewer only reads."""
+    if current_user.role not in EDIT_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=get_text("auth_forbidden")
+        )
+    return current_user
+
+
 async def require_admin(
     current_user: AdminUser = Depends(get_current_active_user),
 ) -> AdminUser:
-    """Write routes. The shared viewer account can only read."""
+    """User management: admins only."""
     if current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail=get_text("auth_forbidden")
         )
     return current_user
+
+
+def set_token_cookie(response: Response, token: str) -> None:
+    """Photos are loaded by <img>, which cannot send a header; scope the cookie to them."""
+    response.set_cookie(
+        COOKIE_NAME,
+        token,
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        httponly=True,
+        samesite="lax",
+        secure=os.getenv("APP_ENV") == "production",
+        path="/api/photos",
+    )
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
@@ -120,6 +148,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     tags=["Authentication"],
 )
 async def login_for_access_token(
+    response: Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db_session),
 ):
@@ -141,6 +170,7 @@ async def login_for_access_token(
             expires_delta=access_token_expires,
         )
         logger.info(f"Login successful for user: {form_data.username}")
+        set_token_cookie(response, access_token)
         return {"access_token": access_token, "token_type": "bearer"}
 
     except (UserNotFoundError, InvalidCredentialsError, UserInactiveError) as e:

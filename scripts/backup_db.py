@@ -5,14 +5,14 @@ import sqlite3
 from datetime import date
 from pathlib import Path
 
-from app.utils.database import DATABASE_URL
+from app.utils.database import DB_PATH
 
 logger = logging.getLogger(__name__)
 KEEP = 30
 
 
 def backup_database() -> Path:
-    src = Path(DATABASE_URL.split("///", 1)[1])
+    src = DB_PATH
     dest_dir = src.parent / "backups"
     dest_dir.mkdir(exist_ok=True)
     dest = dest_dir / f"{src.stem}-{date.today():%Y-%m-%d}.db"

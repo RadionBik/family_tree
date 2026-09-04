@@ -14,6 +14,8 @@ from .api import auth as auth_router
 from .api import birthdays as birthdays_router
 from .api import changes as changes_router
 from .api import family as family_router
+from .api import invites as invites_router
+from .api import photos as photos_router
 from .api import (
     subscriptions as subscriptions_router,
 )
@@ -106,6 +108,8 @@ async def generic_exception_handler(request: Request, exc: Exception):
 app.include_router(family_router.router, prefix="/api", tags=["Family"])
 app.include_router(birthdays_router.router, prefix="/api", tags=["Birthdays"])
 app.include_router(changes_router.router, prefix="/api", tags=["Changes"])
+app.include_router(invites_router.router, prefix="/api", tags=["Invites"])
+app.include_router(photos_router.router, prefix="/api", tags=["Photos"])
 app.include_router(subscriptions_router.router, prefix="/api", tags=["Subscriptions"])
 app.include_router(auth_router.router, prefix="/api", tags=["Authentication"])
 logger.info("API routers included.")
