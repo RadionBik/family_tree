@@ -11,7 +11,9 @@ const FamilyTreeGraph = ({ data, marriages, mainId, onMainChange }) => {
   const containerRef = useRef(null);
   const chartRef = useRef(null);
   const onMainChangeRef = useRef(onMainChange);
-  onMainChangeRef.current = onMainChange;
+  useEffect(() => {
+    onMainChangeRef.current = onMainChange;
+  }, [onMainChange]);
 
   useEffect(() => {
     const container = containerRef.current;

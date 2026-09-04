@@ -3,7 +3,7 @@ extend-exclude = ["migrations/versions"]
 # Same as Black.
 line-length = 88
 # Assume Python 3.12 based on pip output.
-target-version = "py312"
+target-version = "py314"
 
 [tool.ruff.lint]
 # Enable the default set of rules plus some extras.
