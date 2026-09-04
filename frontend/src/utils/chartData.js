@@ -87,3 +87,38 @@ export const pickRoot = (members) => {
       )[0]?.[0] ?? members[0]
   );
 };
+
+// Connected groups of people (parent and spouse links, any direction), largest first.
+export const components = (members) => {
+  const adj = new Map(members.map((m) => [m.id, new Set()]));
+  members.forEach((m) =>
+    m.relationships_from.forEach((r) => {
+      if (!adj.has(r.to_member_id)) return;
+      adj.get(m.id).add(r.to_member_id);
+      adj.get(r.to_member_id).add(m.id);
+    }),
+  );
+  const seen = new Set();
+  const groups = [];
+  members.forEach((start) => {
+    if (seen.has(start.id)) return;
+    const group = [];
+    const queue = [start.id];
+    seen.add(start.id);
+    while (queue.length) {
+      const id = queue.pop();
+      group.push(id);
+      adj.get(id).forEach((n) => {
+        if (!seen.has(n)) {
+          seen.add(n);
+          queue.push(n);
+        }
+      });
+    }
+    groups.push(group);
+  });
+  const byId = new Map(members.map((m) => [m.id, m]));
+  return groups
+    .map((g) => g.map((id) => byId.get(id)))
+    .sort((a, b) => b.length - a.length);
+};

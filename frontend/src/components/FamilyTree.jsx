@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import FamilyTreeGraph from "./FamilyTreeGraph";
 import MemberPanel from "./MemberPanel";
+import Islands from "./Islands";
 import MemberDialog from "./MemberDialog";
 import RelationDialog from "./RelationDialog";
 import familyTreeService from "../services/familyTreeService";
@@ -162,6 +163,16 @@ const FamilyTree = ({
       )}
       {!loading && !error && data.length === 0 && (
         <Typography sx={{ mt: 2 }}>{t("familyTree.noData")}</Typography>
+      )}
+      {!loading && !error && (
+        <Islands
+          members={members}
+          focusId={mainId}
+          onPick={(id) => {
+            onFocus(id);
+            onMemberSelect(id);
+          }}
+        />
       )}
 
       {(dialog === "add" || dialog === "edit") && (
