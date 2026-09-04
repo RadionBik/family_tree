@@ -1,13 +1,16 @@
+import asyncio
 import csv
 import io
 import logging
+import sys
 
-from sqlalchemy import delete
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import FamilyMember, Relation
+from app.models import Change, FamilyMember, Relation
 from app.models.family_member import GenderEnum
 from app.models.relation import RelationTypeEnum
+from app.utils.database import AsyncSessionFactory, async_engine
 from scripts.google_sheets_utils import get_family_data_from_sheet, parse_sheet_date
 
 logger = logging.getLogger(__name__)
@@ -114,8 +117,19 @@ def parse_rows(rows) -> tuple[list[FamilyMember], list[Relation]]:
     return list(members.values()), relations
 
 
-async def process_family_data(db: AsyncSession) -> None:
-    """Replace family_members and relations with the sheet contents, one transaction."""
+async def process_family_data(db: AsyncSession, force: bool = False) -> None:
+    """One-off import: replace family_members and relations with the sheet contents.
+
+    The database is the source of truth; this exists for the initial load and a
+    deliberate re-import. It refuses to run once anything was edited in place
+    (rows in `changes`) unless `force` is set.
+    """
+    edited = (await db.execute(select(func.count(Change.id)))).scalar_one()
+    if edited and not force:
+        logger.error(
+            f"Database has {edited} manual changes; re-import would lose them. Use --force."
+        )
+        return
     csv_data = get_family_data_from_sheet()
     if not csv_data:
         logger.error("No data from Google Sheets, database left untouched")
@@ -133,3 +147,16 @@ async def process_family_data(db: AsyncSession) -> None:
     db.add_all(relations)
     await db.commit()
     logger.info(f"Ingested {len(members)} members, {len(relations)} relations")
+
+
+async def _main() -> None:
+    async with AsyncSessionFactory() as db:
+        await process_family_data(db, force="--force" in sys.argv)
+    await async_engine.dispose()
+
+
+if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+    )
+    asyncio.run(_main())

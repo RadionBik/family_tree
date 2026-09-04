@@ -4,9 +4,10 @@ Private family website: an interactive family tree and a list of upcoming birthd
 
 ## How it works
 
-- A Google Sheet is the only place where family data is edited. A scheduler container re-reads it every 10 minutes and replaces the database contents.
-- FastAPI + SQLite serve the data; a React SPA (family-chart) draws the tree. The whole site is behind a shared login.
-- The scheduler also sends birthday emails at 08:00 UTC to subscribed addresses.
+- The SQLite database is the source of truth. People and relations are edited through the API (admin login); every edit is recorded in a change log that the site shows.
+- FastAPI serves the data; a React SPA (family-chart) draws the tree. The whole site is behind a shared login.
+- A scheduler container sends birthday emails at 08:00 UTC and writes a daily database backup to `db_data/backups/`.
+- The Google Sheet that held the data before is only a one-off import now (`python -m scripts.data_utils`).
 
 Details for working on the code (layout, commands, deploy mechanics, gotchas) are in `CLAUDE.md`.
 
@@ -18,7 +19,7 @@ cp .env.example .env_prod    # docker prod
 make help
 ```
 
-`make dev` starts the dev stack (Vite on :5173 with hot reload). `make prod` starts the production stack. `make seed` creates the two login accounts and runs the first ingest.
+`make dev` starts the dev stack (Vite on :5173 with hot reload). `make prod` starts the production stack. `make seed` creates the two login accounts.
 
 ## Deploy
 
