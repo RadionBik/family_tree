@@ -20,6 +20,8 @@ const FamilyTree = ({
   error,
   selectedMemberId,
   onMemberSelect,
+  focusId,
+  onFocus,
   onChanged,
 }) => {
   const { t } = useTranslation();
@@ -29,15 +31,15 @@ const FamilyTree = ({
 
   const { data, marriages } = useMemo(() => toChartData(members), [members]);
   const byId = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
-  const mainId =
-    selectedMemberId || (members.length ? pickRoot(members).id : null);
+  const rootId = members.length ? pickRoot(members).id : null;
+  const mainId = focusId || rootId;
   const selected = selectedMemberId ? byId.get(selectedMemberId) : null;
 
-  const afterWrite = async (focusId) => {
+  const afterWrite = async (focus) => {
     setDialog(null);
     setActionError(null);
     await onChanged();
-    if (focusId !== undefined) onMemberSelect(focusId);
+    if (focus !== undefined) onMemberSelect(focus);
   };
 
   const run = async (action) => {
@@ -63,6 +65,15 @@ const FamilyTree = ({
         <Typography variant="h6" component="h2" sx={{ flexGrow: 1 }}>
           {t("familyTree.title")}
         </Typography>
+        <Button
+          size="small"
+          variant="outlined"
+          onClick={() => onFocus(rootId)}
+          disabled={!rootId || mainId === rootId}
+          sx={{ mr: 1 }}
+        >
+          {t("tree.showAll")}
+        </Button>
         {isAdmin && (
           <Button
             size="small"
@@ -108,7 +119,12 @@ const FamilyTree = ({
               data={data}
               marriages={marriages}
               mainId={mainId}
-              onMainChange={onMemberSelect}
+              selectedId={selectedMemberId}
+              onSelect={onMemberSelect}
+              onMainChange={(id) => {
+                onFocus(id);
+                onMemberSelect(id);
+              }}
             />
           </Box>
           <Box
@@ -128,6 +144,8 @@ const FamilyTree = ({
               isAdmin={isAdmin}
               error={actionError}
               onSelect={onMemberSelect}
+              onCenter={() => onFocus(selected.id)}
+              isCentered={selected?.id === mainId}
               onEdit={() => setDialog("edit")}
               onDelete={deleteMember}
               onAddRelation={() => setDialog("relation")}

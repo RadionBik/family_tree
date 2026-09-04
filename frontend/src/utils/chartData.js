@@ -51,8 +51,39 @@ export const toChartData = (members) => {
   return { data, marriages };
 };
 
-// Oldest person with a known birth date, else the first one.
-export const pickRoot = (members) =>
-  [...members]
-    .filter((m) => m.birth_date)
-    .sort((a, b) => a.birth_date.localeCompare(b.birth_date))[0] || members[0];
+// Default focus: the person without parents who has the most descendants, so the
+// opening view shows as much of the family as possible. Ties go to the oldest.
+export const pickRoot = (members) => {
+  const children = new Map(members.map((m) => [m.id, []]));
+  const hasParent = new Set();
+  members.forEach((m) =>
+    m.relationships_from.forEach((r) => {
+      if (r.relation_type !== "PARENT" || !children.has(r.to_member_id)) return;
+      children.get(m.id).push(r.to_member_id);
+      hasParent.add(r.to_member_id);
+    }),
+  );
+  const descendants = (id) => {
+    const seen = new Set();
+    const queue = [id];
+    while (queue.length) {
+      children.get(queue.pop()).forEach((c) => {
+        if (!seen.has(c)) {
+          seen.add(c);
+          queue.push(c);
+        }
+      });
+    }
+    return seen.size;
+  };
+  return (
+    [...members]
+      .filter((m) => !hasParent.has(m.id))
+      .map((m) => [m, descendants(m.id)])
+      .sort(
+        (x, y) =>
+          y[1] - x[1] ||
+          (x[0].birth_date || "9999").localeCompare(y[0].birth_date || "9999"),
+      )[0]?.[0] ?? members[0]
+  );
+};

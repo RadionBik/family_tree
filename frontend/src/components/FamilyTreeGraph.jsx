@@ -6,14 +6,23 @@ import "family-chart/styles/family-chart.css";
 // `data` is family-chart input (see toChartData in FamilyTree.jsx). The chart
 // is person-centric: `mainId` is the card in the middle, clicking a card makes
 // it main and reports it through onMainChange.
-const FamilyTreeGraph = ({ data, marriages, mainId, onMainChange }) => {
+const FamilyTreeGraph = ({
+  data,
+  marriages,
+  mainId,
+  selectedId,
+  onSelect,
+  onMainChange,
+}) => {
   const { t } = useTranslation();
   const containerRef = useRef(null);
   const chartRef = useRef(null);
   const onMainChangeRef = useRef(onMainChange);
+  const onSelectRef = useRef(onSelect);
   useEffect(() => {
     onMainChangeRef.current = onMainChange;
-  }, [onMainChange]);
+    onSelectRef.current = onSelect;
+  }, [onMainChange, onSelect]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -38,10 +47,8 @@ const FamilyTreeGraph = ({ data, marriages, mainId, onMainChange }) => {
       .setCardImageField("photo_url")
       .setCardDisplay([(d) => d.data.name, (d) => d.data.years])
       .setOnHoverPathToMain();
-    card.setOnCardClick((e, d) => {
-      card.onCardClickDefault(e, d);
-      onMainChangeRef.current?.(d.data.id);
-    });
+    // Click opens the panel; the tree stays as it is.
+    card.setOnCardClick((e, d) => onSelectRef.current?.(d.data.id));
 
     if (mainId && chart.store.getDatum(mainId)) chart.updateMainId(mainId);
     chart.updateTree({ initial: true, tree_position: "fit" });
@@ -60,8 +67,17 @@ const FamilyTreeGraph = ({ data, marriages, mainId, onMainChange }) => {
     if (!chart || !mainId || chart.store.getMainId() === mainId) return;
     if (!chart.store.getDatum(mainId)) return;
     chart.updateMainId(mainId);
-    chart.updateTree({ tree_position: "main_to_middle" });
+    chart.updateTree({ tree_position: "fit" });
   }, [mainId]);
+
+  // A person selected elsewhere (birthday list, relation chip) who is not in the
+  // drawn tree becomes the focus so they can be seen.
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart || !selectedId || !chart.store.getDatum(selectedId)) return;
+    if (!chart.store.getTreeDatum(selectedId))
+      onMainChangeRef.current?.(selectedId);
+  }, [selectedId]);
 
   return (
     <div

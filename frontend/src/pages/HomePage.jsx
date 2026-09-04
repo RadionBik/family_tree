@@ -13,6 +13,7 @@ import { pickRoot } from "../utils/chartData";
 const HomePage = () => {
   const { t } = useTranslation();
   const [selectedMemberId, setSelectedMemberId] = useState(null);
+  const [focusId, setFocusId] = useState(null); // tree center; null = default root
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -53,6 +54,8 @@ const HomePage = () => {
           error={error}
           selectedMemberId={selectedMemberId}
           onMemberSelect={setSelectedMemberId}
+          focusId={focusId}
+          onFocus={setFocusId}
           onChanged={reload}
         />
       </Box>

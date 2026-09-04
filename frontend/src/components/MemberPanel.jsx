@@ -44,6 +44,8 @@ const MemberPanel = ({
   isAdmin,
   error,
   onSelect,
+  onCenter,
+  isCentered,
   onEdit,
   onDelete,
   onAddRelation,
@@ -102,6 +104,15 @@ const MemberPanel = ({
           </Typography>
         </Box>
       </Box>
+
+      <Button
+        size="small"
+        variant="outlined"
+        onClick={onCenter}
+        disabled={isCentered}
+      >
+        {t("tree.center")}
+      </Button>
 
       {isAdmin && (
         <Stack direction="row" spacing={1}>
