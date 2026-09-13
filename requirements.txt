@@ -2,12 +2,12 @@
 fastapi[all]==0.141.1
 uvicorn[standard]==0.52.4
 SQLAlchemy==2.0.52
-alembic==1.19.1
+alembic==1.19.2
 argon2-cffi==25.1.0
 python-jose[cryptography]==3.5.0
 python-dotenv==1.2.3
 aiosqlite==0.22.1
-Pillow==12.1.1
+Pillow==12.3.0
 
 # Google Sheets integration
 google-api-python-client==2.200.0
@@ -15,4 +15,4 @@ google-auth-httplib2==0.4.2
 google-auth-oauthlib==1.4.1
 
 # Development and CI/CD
-pre-commit==4.2.0
+pre-commit==4.6.2
