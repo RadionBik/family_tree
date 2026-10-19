@@ -3,7 +3,9 @@
 import asyncio
 import csv
 import io
+import json
 import os
+import tarfile
 import tempfile
 
 os.environ["DATABASE_URL"] = f"sqlite:///{tempfile.mkdtemp()}/test.db"
@@ -20,6 +22,7 @@ from app.utils.database import AsyncSessionFactory, Base, async_engine  # noqa: 
 from run_scheduler import load_state, save_state  # noqa: E402
 from scripts.backup_db import backup_database  # noqa: E402
 from scripts.data_utils import parse_rows  # noqa: E402
+from scripts.deploy_receive import image_names  # noqa: E402
 
 SHEET = """id,first_name,last_name,birth_date,gender,mother_id,father_id,spouse_id,marriage_date,photo_url,telegram
 a,Anna,Ivanova,1950-02-01,female,,,b,1972-06-10,https://x/a.jpg,@anna
@@ -42,6 +45,37 @@ def test_parse_rows_dedupes_spouses_and_skips_unknown_ids():
         (RelationTypeEnum.PARENT, "a", "c"),
         (RelationTypeEnum.PARENT, "b", "c"),
         (RelationTypeEnum.PARENT, "a", "d"),  # "zzz" dropped
+    }
+
+
+def test_deploy_receive_reads_every_image_name():
+    def archive(files):
+        path = tempfile.mktemp(suffix=".tar.gz")
+        with tarfile.open(path, "w:gz") as tar:
+            for name, data in files.items():
+                raw = json.dumps(data).encode()
+                info = tarfile.TarInfo(name)
+                info.size = len(raw)
+                tar.addfile(info, io.BytesIO(raw))
+        return path
+
+    ours = [{"RepoTags": ["family_tree-backend:latest"]}]
+    assert image_names(archive({"manifest.json": ours})) == {
+        "family_tree-backend:latest"
+    }
+    # a name hidden in index.json must show up too, else it could replace caddy on the next recreate
+    index = {
+        "manifests": [
+            {
+                "annotations": {
+                    "io.containerd.image.name": "docker.io/library/caddy:2.11"
+                }
+            }
+        ]
+    }
+    assert image_names(archive({"manifest.json": ours, "index.json": index})) == {
+        "family_tree-backend:latest",
+        "caddy:2.11",
     }
 
 
@@ -210,5 +244,6 @@ def test_api():
 
 if __name__ == "__main__":
     test_parse_rows_dedupes_spouses_and_skips_unknown_ids()
+    test_deploy_receive_reads_every_image_name()
     test_api()
     print("smoke ok")

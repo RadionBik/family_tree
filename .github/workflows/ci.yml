@@ -55,8 +55,6 @@ jobs:
           ssh-keyscan -p "$VPS_PORT" "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
       - name: Build images
         run: env UID=1000 GID=1000 docker compose -f docker-compose.yml -f docker-compose.prod.yml build
-      - name: Ship images, sync the tree, restart
-        run: |
-          docker save family_tree-backend family_tree-frontend | gzip | ssh -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" 'gunzip | docker load'
-          rsync -rtlz --delete --filter='merge .rsync-filter' -e "ssh -p $VPS_PORT" ./ "$VPS_USER@$VPS_HOST:~/family_tree/"
-          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" 'cd ~/family_tree && make prod'
+      # The key's forced command (scripts/deploy_receive.py) loads the images and runs `make prod`.
+      - name: Ship images, restart
+        run: docker save family_tree-backend family_tree-frontend | gzip | ssh -p "$VPS_PORT" "$VPS_USER@$VPS_HOST"

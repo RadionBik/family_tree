@@ -27,7 +27,9 @@ The scheduler keeps last-run dates in `db_data/scheduler_state.json`; delete the
 
 ## Deploy
 
-- `deploy` job in `.github/workflows/ci.yml`: on push to `main` after CI, builds both images on the runner, ships them with `docker save | ssh docker load`, rsyncs the tree (`.rsync-filter` protects server-side `.env*`, `*.json`, `db_data/`, `logs/`) and runs `make prod` (`docker compose up -d`, no build). Secrets: `VPS_HOST`, `VPS_PORT`, `VPS_USER`, `VPS_SSH_KEY`. `send_to_prod.sh` is the manual equivalent.
+- `deploy` job in `.github/workflows/ci.yml`: on push to `main` after CI, builds both images on the runner and pipes `docker save | gzip` into ssh. Secrets: `VPS_HOST`, `VPS_PORT`, `VPS_USER`, `VPS_SSH_KEY`.
+- The deploy key is locked to `restrict,command="python3 /home/radion/family_tree/scripts/deploy_receive.py"` in the server's `~/.ssh/authorized_keys`: it loads only the two family_tree images and runs `make prod` (`docker compose up -d`, no build). CI cannot change server files, so a leaked key cannot run code on the host. It can still replace the two family_tree images, which run with the mounts in the server's compose files.
+- Changes to `Makefile`, `docker-compose*.yml` or `scripts/deploy_receive.py` reach the server only through `send_to_prod.sh` (your own key; builds, ships, rsyncs the tree with `.rsync-filter` protecting server-side `.env*`, `*.json`, `db_data/`, `logs/`, then `make prod`).
 - The host runs one shared Caddy on docker network `caddy-vps`; `docker-compose.prod.yml` attaches the frontend to it. The host Caddyfile needs `<subdomain> { reverse_proxy family_tree_frontend:80 }`.
 - Backend container runs as UID/GID 1000; the bind-mounted `db_data/` must be writable by it. Logs go to stdout only (`docker logs`). `.env_prod` and the service-account key exist only on the server (`.dockerignore` drops `.env*`, `*.json`; the key is mounted read-only via `${GOOGLE_SERVICE_ACCOUNT_FILE}`).
 - `.env_prod` is both compose `--env-file` (needs `UID`/`GID`) and container `env_file`; a `$` inside a secret triggers compose interpolation warnings.
